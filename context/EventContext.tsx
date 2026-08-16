@@ -103,7 +103,7 @@ type EventContextType = {
 
   deleteEvent: (
     eventId: string
-  ) => Promise<void>;
+  ) => Promise<string | null>;
 };
 
 const EventContext =
@@ -742,14 +742,15 @@ export function EventProvider({
   async function deleteEvent(
     eventId: string
   ) {
-    const { error } =
+    const { data, error } =
       await supabase
         .from("events")
         .delete()
         .eq(
           "id",
           eventId
-        );
+        )
+        .select("id");
 
     if (error) {
       console.error(
@@ -757,10 +758,21 @@ export function EventProvider({
         error.message
       );
 
-      return;
+      return "Could not delete the event.";
+    }
+
+    if (
+      !data ||
+      data.length === 0
+    ) {
+      await refreshEvents();
+
+      return "You no longer have permission to delete this event.";
     }
 
     await refreshEvents();
+
+    return null;
   }
 
   return (

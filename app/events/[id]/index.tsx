@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import {
-  Alert,
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -63,6 +63,21 @@ export default function EventDetailsScreen() {
     setAddingMember,
   ] = useState(false);
 
+  const [
+    showDeleteConfirmation,
+    setShowDeleteConfirmation,
+  ] = useState(false);
+
+  const [
+    deletingEvent,
+    setDeletingEvent,
+  ] = useState(false);
+
+  const [
+    deleteError,
+    setDeleteError,
+  ] = useState("");
+
   useFocusEffect(
     useCallback(() => {
       refreshEvents();
@@ -111,33 +126,36 @@ export default function EventDetailsScreen() {
     setMemberName("");
   }
 
-  function handleDeleteEvent() {
+  function handleDeleteEventPress() {
+    setDeleteError("");
+    setShowDeleteConfirmation(true);
+  }
+
+  function handleCancelDelete() {
+    setShowDeleteConfirmation(false);
+    setDeleteError("");
+  }
+
+  async function handleConfirmDelete() {
     if (!event) {
       return;
     }
 
-    Alert.alert(
-      "Delete event?",
-      `Are you sure you want to delete "${event.name}"?`,
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Delete",
-          style: "destructive",
+    setDeletingEvent(true);
+    setDeleteError("");
 
-          onPress: async () => {
-            await deleteEvent(
-              event.id
-            );
+    const deleteErrorMessage =
+      await deleteEvent(event.id);
 
-            router.replace("/");
-          },
-        },
-      ]
-    );
+    if (deleteErrorMessage) {
+      setDeletingEvent(false);
+      setDeleteError(
+        deleteErrorMessage
+      );
+      return;
+    }
+
+    router.replace("/");
   }
 
   if (!event) {
@@ -991,13 +1009,14 @@ export default function EventDetailsScreen() {
           </Pressable>
         ) : null}
 
-        {isCreator ? (
+        {isCreator &&
+        !showDeleteConfirmation ? (
           <Pressable
             style={
               styles.deleteButton
             }
             onPress={
-              handleDeleteEvent
+              handleDeleteEventPress
             }
           >
             <Text
@@ -1008,6 +1027,100 @@ export default function EventDetailsScreen() {
               Delete Event
             </Text>
           </Pressable>
+        ) : null}
+
+        {isCreator &&
+        showDeleteConfirmation ? (
+          <View
+            style={
+              styles.deleteConfirmationBox
+            }
+          >
+            <Text
+              style={
+                styles.deleteConfirmationTitle
+              }
+            >
+              Delete &quot;
+              {event.name}&quot;?
+            </Text>
+
+            <Text
+              style={
+                styles.deleteConfirmationText
+              }
+            >
+              This permanently deletes
+              the event and all of its
+              transactions for every
+              member. This cannot be
+              undone.
+            </Text>
+
+            {deleteError ? (
+              <Text
+                style={
+                  styles.errorText
+                }
+              >
+                {deleteError}
+              </Text>
+            ) : null}
+
+            <View
+              style={
+                styles.deleteConfirmationActions
+              }
+            >
+              <Pressable
+                style={
+                  styles.cancelButton
+                }
+                onPress={
+                  handleCancelDelete
+                }
+                disabled={
+                  deletingEvent
+                }
+              >
+                <Text
+                  style={
+                    styles.cancelButtonText
+                  }
+                >
+                  Cancel
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={[
+                  styles.confirmDeleteButton,
+                  deletingEvent &&
+                    styles.disabledButton,
+                ]}
+                onPress={
+                  handleConfirmDelete
+                }
+                disabled={
+                  deletingEvent
+                }
+              >
+                {deletingEvent ? (
+                  <ActivityIndicator
+                    color="white"
+                  />
+                ) : (
+                  <Text
+                    style={
+                      styles.confirmDeleteButtonText
+                    }
+                  >
+                    Yes, Delete Event
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
         ) : null}
       </ScrollView>
     </View>
@@ -1298,6 +1411,67 @@ const styles =
       color: "#DC2626",
       fontSize: 16,
       fontWeight: "600",
+    },
+
+    deleteConfirmationBox: {
+      marginTop: 40,
+      borderWidth: 1,
+      borderColor: "#FCA5A5",
+      borderRadius: 12,
+      padding: 16,
+      backgroundColor: "#FEF2F2",
+    },
+
+    deleteConfirmationTitle: {
+      fontSize: 17,
+      fontWeight: "700",
+      color: "#991B1B",
+    },
+
+    deleteConfirmationText: {
+      fontSize: 14,
+      color: "#7F1D1D",
+      lineHeight: 20,
+      marginTop: 8,
+    },
+
+    deleteConfirmationActions: {
+      flexDirection: "row",
+      gap: 10,
+      marginTop: 16,
+    },
+
+    cancelButton: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: "#D1D5DB",
+      borderRadius: 10,
+      paddingVertical: 12,
+      alignItems: "center",
+      backgroundColor: "white",
+    },
+
+    cancelButtonText: {
+      color: "#374151",
+      fontWeight: "600",
+    },
+
+    confirmDeleteButton: {
+      flex: 1,
+      backgroundColor: "#DC2626",
+      borderRadius: 10,
+      paddingVertical: 12,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    confirmDeleteButtonText: {
+      color: "white",
+      fontWeight: "600",
+    },
+
+    disabledButton: {
+      opacity: 0.45,
     },
 
     notFoundText: {
