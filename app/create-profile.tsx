@@ -61,9 +61,6 @@ export default function CreateProfileScreen() {
 
             display_name:
               trimmedName,
-
-            is_deleted:
-              false,
           },
           {
             onConflict: "id",
