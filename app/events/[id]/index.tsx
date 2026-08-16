@@ -18,7 +18,10 @@ import {
 } from "react-native";
 
 import { useAuth } from "../../../context/AuthContext";
-import { useEvents } from "../../../context/EventContext";
+import {
+  Transaction,
+  useEvents,
+} from "../../../context/EventContext";
 
 export default function EventDetailsScreen() {
   const { id } =
@@ -41,6 +44,7 @@ export default function EventDetailsScreen() {
     markTransactionPaid,
     confirmSettlement,
     rejectSettlement,
+    forceResolveTransaction,
     deleteEvent,
   } = useEvents();
 
@@ -200,12 +204,121 @@ export default function EventDetailsScreen() {
   function getMemberName(
     memberId: string
   ) {
+    if (!event) {
+      return "Unknown";
+    }
+
     return (
       event.members.find(
         (member) =>
           member.id === memberId
       )?.displayName ??
       "Unknown"
+    );
+  }
+
+  function isMemberActive(
+    memberId: string
+  ) {
+    if (!event) {
+      return false;
+    }
+
+    return event.members.some(
+      (member) =>
+        member.id === memberId
+    );
+  }
+
+  function getBlockingMemberId(
+    transaction: Transaction
+  ) {
+    if (
+      transaction.status ===
+      "pending"
+    ) {
+      return transaction.creditorId;
+    }
+
+    if (
+      transaction.status ===
+      "confirmed"
+    ) {
+      return transaction.debtorId;
+    }
+
+    if (
+      transaction.status ===
+      "payment_pending"
+    ) {
+      return transaction.creditorId;
+    }
+
+    return null;
+  }
+
+  function renderResolveIfStuck(
+    transaction: Transaction
+  ) {
+    if (!isCreator) {
+      return null;
+    }
+
+    const blockingId =
+      getBlockingMemberId(
+        transaction
+      );
+
+    if (
+      !blockingId ||
+      isMemberActive(blockingId)
+    ) {
+      return null;
+    }
+
+    return (
+      <View
+        style={
+          styles.resolveContainer
+        }
+      >
+        <Text
+          style={
+            styles.resolveHint
+          }
+        >
+          This member&apos;s account
+          was deleted, so this
+          can&apos;t be confirmed
+          normally. As the event
+          creator, you can resolve
+          it manually.
+        </Text>
+
+        <Pressable
+          style={
+            styles.resolveButton
+          }
+          onPress={() => {
+            if (!event) {
+              return;
+            }
+
+            forceResolveTransaction(
+              event.id,
+              transaction.id
+            );
+          }}
+        >
+          <Text
+            style={
+              styles.resolveButtonText
+            }
+          >
+            Resolve
+          </Text>
+        </Pressable>
+      </View>
     );
   }
 
@@ -525,6 +638,10 @@ export default function EventDetailsScreen() {
                     }
                   </Text>
                 )}
+
+                {renderResolveIfStuck(
+                  transaction
+                )}
               </View>
             )
           )
@@ -702,6 +819,10 @@ export default function EventDetailsScreen() {
                     </View>
                   </>
                 ) : null}
+
+                {renderResolveIfStuck(
+                  transaction
+                )}
               </View>
             )
           )
@@ -1099,6 +1220,34 @@ const styles =
 
     rejectButtonText: {
       color: "#DC2626",
+      fontWeight: "600",
+    },
+
+    resolveContainer: {
+      marginTop: 14,
+      borderWidth: 1,
+      borderColor: "#FCD34D",
+      backgroundColor: "#FFFBEB",
+      borderRadius: 10,
+      padding: 12,
+    },
+
+    resolveHint: {
+      fontSize: 13,
+      color: "#92400E",
+      lineHeight: 18,
+    },
+
+    resolveButton: {
+      backgroundColor: "#92400E",
+      paddingVertical: 10,
+      borderRadius: 10,
+      alignItems: "center",
+      marginTop: 10,
+    },
+
+    resolveButtonText: {
+      color: "white",
       fontWeight: "600",
     },
 

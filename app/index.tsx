@@ -181,7 +181,7 @@ export default function HomeScreen() {
               styles.emptyText
             }
           >
-            You haven't created or
+            You haven&apos;t created or
             joined any events yet.
           </Text>
         ) : (

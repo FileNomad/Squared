@@ -46,10 +46,6 @@ export default function AccountScreen() {
     setDeleting(true);
     setError("");
 
-    console.log(
-      "Starting account deletion..."
-    );
-
     const {
       data,
       error: functionError,
@@ -60,12 +56,6 @@ export default function AccountScreen() {
           password,
         },
       }
-    );
-
-    console.log(
-      "Delete account response:",
-      data,
-      functionError
     );
 
     if (functionError) {
@@ -147,10 +137,6 @@ export default function AccountScreen() {
       setShowConfirmation(false);
       return;
     }
-
-    console.log(
-      "Account deletion succeeded."
-    );
 
     await supabase.auth.signOut();
 

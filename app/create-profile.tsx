@@ -93,15 +93,7 @@ export default function CreateProfileScreen() {
       return;
     }
 
-    console.log(
-      "Profile saved successfully."
-    );
-
     await refreshProfile();
-
-    console.log(
-      "Profile refreshed."
-    );
 
     setLoading(false);
 
