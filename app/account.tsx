@@ -19,7 +19,32 @@ import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 
 export default function AccountScreen() {
-  const { profile } = useAuth();
+  const {
+    profile,
+    refreshProfile,
+  } = useAuth();
+
+  const [
+    editingName,
+    setEditingName,
+  ] = useState(false);
+
+  const [
+    displayNameInput,
+    setDisplayNameInput,
+  ] = useState(
+    profile?.display_name ?? ""
+  );
+
+  const [
+    savingName,
+    setSavingName,
+  ] = useState(false);
+
+  const [
+    nameError,
+    setNameError,
+  ] = useState("");
 
   const [password, setPassword] =
     useState("");
@@ -143,6 +168,76 @@ export default function AccountScreen() {
     router.replace("/login");
   }
 
+  function handleEditNamePress() {
+    setDisplayNameInput(
+      profile?.display_name ?? ""
+    );
+    setNameError("");
+    setEditingName(true);
+  }
+
+  function handleCancelEditName() {
+    setEditingName(false);
+    setNameError("");
+  }
+
+  async function handleSaveName() {
+    const trimmedName =
+      displayNameInput.trim();
+
+    if (!trimmedName) {
+      setNameError(
+        "Enter a display name."
+      );
+      return;
+    }
+
+    if (
+      trimmedName ===
+      profile?.display_name
+    ) {
+      setEditingName(false);
+      return;
+    }
+
+    if (!profile) {
+      return;
+    }
+
+    setSavingName(true);
+    setNameError("");
+
+    const { error } =
+      await supabase
+        .from("profiles")
+        .update({
+          display_name:
+            trimmedName,
+        })
+        .eq("id", profile.id);
+
+    setSavingName(false);
+
+    if (error) {
+      if (
+        error.code === "23505"
+      ) {
+        setNameError(
+          "That display name is already in use. Please choose another."
+        );
+      } else {
+        setNameError(
+          "Could not update your display name. Please try again."
+        );
+      }
+      return;
+    }
+
+    await refreshProfile();
+
+    setEditingName(false);
+  }
+
   function handleDeleteAccount() {
     if (!password) {
       setError(
@@ -166,11 +261,133 @@ export default function AccountScreen() {
           Account
         </Text>
 
-        <Text
-          style={styles.displayName}
-        >
-          {profile?.display_name}
-        </Text>
+        {!editingName ? (
+          <View
+            style={styles.nameRow}
+          >
+            <Text
+              style={
+                styles.displayName
+              }
+            >
+              {
+                profile?.display_name
+              }
+            </Text>
+
+            <Pressable
+              onPress={
+                handleEditNamePress
+              }
+            >
+              <Text
+                style={
+                  styles.editNameLink
+                }
+              >
+                Edit
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View
+            style={
+              styles.nameEditBox
+            }
+          >
+            <Text
+              style={styles.label}
+            >
+              Display name
+            </Text>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Your name"
+              placeholderTextColor="#9CA3AF"
+              value={
+                displayNameInput
+              }
+              onChangeText={(
+                value
+              ) => {
+                setDisplayNameInput(
+                  value
+                );
+                setNameError("");
+              }}
+              maxLength={40}
+              autoCapitalize="words"
+              editable={
+                !savingName
+              }
+            />
+
+            {nameError ? (
+              <Text
+                style={
+                  styles.errorText
+                }
+              >
+                {nameError}
+              </Text>
+            ) : null}
+
+            <View
+              style={
+                styles.nameEditActions
+              }
+            >
+              <Pressable
+                style={
+                  styles.cancelButton
+                }
+                onPress={
+                  handleCancelEditName
+                }
+                disabled={
+                  savingName
+                }
+              >
+                <Text
+                  style={
+                    styles.cancelButtonText
+                  }
+                >
+                  Cancel
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={[
+                  styles.saveNameButton,
+                  savingName &&
+                    styles.disabledButton,
+                ]}
+                onPress={
+                  handleSaveName
+                }
+                disabled={
+                  savingName
+                }
+              >
+                {savingName ? (
+                  <ActivityIndicator
+                    color="white"
+                  />
+                ) : (
+                  <Text
+                    style={
+                      styles.saveNameButtonText
+                    }
+                  >
+                    Save
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        )}
 
         <View
           style={styles.dangerSection}
@@ -351,7 +568,44 @@ const styles =
     displayName: {
       fontSize: 16,
       color: "#6B7280",
+    },
+
+    nameRow: {
+      flexDirection: "row",
+      justifyContent:
+        "space-between",
+      alignItems: "center",
       marginTop: 8,
+    },
+
+    editNameLink: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: "#111827",
+    },
+
+    nameEditBox: {
+      marginTop: 16,
+    },
+
+    nameEditActions: {
+      flexDirection: "row",
+      gap: 10,
+      marginTop: 14,
+    },
+
+    saveNameButton: {
+      flex: 1,
+      backgroundColor: "#111827",
+      borderRadius: 10,
+      paddingVertical: 12,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    saveNameButtonText: {
+      color: "white",
+      fontWeight: "600",
     },
 
     dangerSection: {
