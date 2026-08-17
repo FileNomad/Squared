@@ -75,21 +75,6 @@ function AppNavigator() {
           />
         </Stack.Protected>
 
-        {/*
-          Not wrapped in a Stack.Protected guard: the
-          recovery link authenticates the user (session
-          becomes truthy) before they've actually set a new
-          password, so this screen has to stay reachable
-          through that transition rather than being hidden
-          by the signed-in/signed-out guards above/below.
-        */}
-        <Stack.Screen
-          name="reset-password"
-          options={{
-            headerShown: false,
-          }}
-        />
-
         <Stack.Protected
           guard={
             !!session &&
@@ -147,6 +132,33 @@ function AppNavigator() {
             }}
           />
         </Stack.Protected>
+
+        {/*
+          Not wrapped in a Stack.Protected guard: the
+          recovery link authenticates the user (session
+          becomes truthy) before they've actually set a new
+          password, so this screen has to stay reachable
+          through that transition rather than being hidden
+          by the signed-in/signed-out guards above.
+
+          Declared last deliberately: when the currently
+          active route's guard flips false (e.g. login's
+          !session becoming false on sign-in), Expo Router
+          falls back to the first still-available screen in
+          declaration order. With this screen declared right
+          after the signed-out group, it was winning that
+          fallback ahead of create-profile/index - landing
+          signed-in users here instead of in the app. Last
+          position means the real guarded groups are always
+          preferred; this is still reachable directly via its
+          own URL/deep link either way.
+        */}
+        <Stack.Screen
+          name="reset-password"
+          options={{
+            headerShown: false,
+          }}
+        />
       </Stack>
 
       <StatusBar
