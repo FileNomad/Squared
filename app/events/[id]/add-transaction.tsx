@@ -2,7 +2,10 @@ import {
   router,
   useLocalSearchParams,
 } from "expo-router";
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 import {
   Pressable,
   ScrollView,
@@ -16,9 +19,10 @@ import { useAuth } from "../../../context/AuthContext";
 import { useEvents } from "../../../context/EventContext";
 
 export default function AddTransactionScreen() {
-  const { id } =
+  const { id, transactionId } =
     useLocalSearchParams<{
       id: string;
+      transactionId?: string;
     }>();
 
   const {
@@ -29,12 +33,26 @@ export default function AddTransactionScreen() {
   const {
     events,
     createTransaction,
+    editTransaction,
   } = useEvents();
 
   const event =
     events.find(
       (item) => item.id === id
     );
+
+  const editingTransaction =
+    transactionId
+      ? event?.transactions.find(
+          (transaction) =>
+            transaction.id ===
+            transactionId
+        )
+      : undefined;
+
+  const isEditing = Boolean(
+    transactionId
+  );
 
   const [
     creditorId,
@@ -54,6 +72,26 @@ export default function AddTransactionScreen() {
 
   const [loading, setLoading] =
     useState(false);
+
+  useEffect(() => {
+    if (editingTransaction) {
+      setCreditorId(
+        editingTransaction.creditorId
+      );
+
+      setAmount(
+        (
+          editingTransaction.amountInPence /
+          100
+        ).toFixed(2)
+      );
+
+      setDescription(
+        editingTransaction.description
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingTransaction?.id]);
 
   async function handleSubmit() {
     if (
@@ -78,14 +116,24 @@ export default function AddTransactionScreen() {
     setError("");
 
     const transactionError =
-      await createTransaction(
-        event.id,
-        creditorId,
-        Math.round(
-          numericAmount * 100
-        ),
-        description.trim()
-      );
+      isEditing && transactionId
+        ? await editTransaction(
+            event.id,
+            transactionId,
+            creditorId,
+            Math.round(
+              numericAmount * 100
+            ),
+            description.trim()
+          )
+        : await createTransaction(
+            event.id,
+            creditorId,
+            Math.round(
+              numericAmount * 100
+            ),
+            description.trim()
+          );
 
     setLoading(false);
 
@@ -137,7 +185,9 @@ export default function AddTransactionScreen() {
         }
       >
         <Text style={styles.title}>
-          Add Transaction
+          {isEditing
+            ? "Edit Transaction"
+            : "Add Transaction"}
         </Text>
 
         <Text style={styles.intro}>
@@ -259,8 +309,10 @@ export default function AddTransactionScreen() {
             }
           >
             {loading
-              ? "Sending..."
-              : "Send for Confirmation"}
+              ? "Saving..."
+              : isEditing
+                ? "Save Changes"
+                : "Send for Confirmation"}
           </Text>
         </Pressable>
       </ScrollView>

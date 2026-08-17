@@ -17,7 +17,8 @@ export type TransactionStatus =
   | "confirmed"
   | "rejected"
   | "payment_pending"
-  | "settled";
+  | "settled"
+  | "cancelled";
 
 export type Member = {
   id: string;
@@ -71,6 +72,19 @@ type EventContextType = {
     description: string
   ) => Promise<string | null>;
 
+  editTransaction: (
+    eventId: string,
+    transactionId: string,
+    creditorId: string,
+    amountInPence: number,
+    description: string
+  ) => Promise<string | null>;
+
+  cancelTransaction: (
+    eventId: string,
+    transactionId: string
+  ) => Promise<string | null>;
+
   confirmTransaction: (
     eventId: string,
     transactionId: string
@@ -103,6 +117,15 @@ type EventContextType = {
 
   deleteEvent: (
     eventId: string
+  ) => Promise<string | null>;
+
+  leaveEvent: (
+    eventId: string
+  ) => Promise<string | null>;
+
+  removeMember: (
+    eventId: string,
+    userId: string
   ) => Promise<string | null>;
 };
 
@@ -644,6 +667,42 @@ export function EventProvider({
     return null;
   }
 
+  async function editTransaction(
+    eventId: string,
+    transactionId: string,
+    creditorId: string,
+    amountInPence: number,
+    description: string
+  ) {
+    const { error } =
+      await supabase.rpc(
+        "edit_pending_transaction",
+        {
+          p_event_id: eventId,
+
+          p_transaction_id:
+            transactionId,
+
+          p_creditor_id:
+            creditorId,
+
+          p_amount_in_pence:
+            amountInPence,
+
+          p_description:
+            description.trim(),
+        }
+      );
+
+    if (error) {
+      return error.message;
+    }
+
+    await refreshEvents();
+
+    return null;
+  }
+
   async function runTransactionAction(
     functionName: string,
     eventId: string,
@@ -739,6 +798,72 @@ export function EventProvider({
     );
   }
 
+  async function cancelTransaction(
+    eventId: string,
+    transactionId: string
+  ) {
+    const { error } =
+      await supabase.rpc(
+        "cancel_transaction",
+        {
+          p_event_id: eventId,
+
+          p_transaction_id:
+            transactionId,
+        }
+      );
+
+    if (error) {
+      return error.message;
+    }
+
+    await refreshEvents();
+
+    return null;
+  }
+
+  async function leaveEvent(
+    eventId: string
+  ) {
+    const { error } =
+      await supabase.rpc(
+        "leave_event",
+        {
+          p_event_id: eventId,
+        }
+      );
+
+    if (error) {
+      return error.message;
+    }
+
+    await refreshEvents();
+
+    return null;
+  }
+
+  async function removeMember(
+    eventId: string,
+    userId: string
+  ) {
+    const { error } =
+      await supabase.rpc(
+        "remove_event_member",
+        {
+          p_event_id: eventId,
+          p_user_id: userId,
+        }
+      );
+
+    if (error) {
+      return error.message;
+    }
+
+    await refreshEvents();
+
+    return null;
+  }
+
   async function deleteEvent(
     eventId: string
   ) {
@@ -786,6 +911,8 @@ export function EventProvider({
         createEvent,
         addMember,
         createTransaction,
+        editTransaction,
+        cancelTransaction,
 
         confirmTransaction,
         rejectTransaction,
@@ -796,6 +923,8 @@ export function EventProvider({
         forceResolveTransaction,
 
         deleteEvent,
+        leaveEvent,
+        removeMember,
       }}
     >
       {children}

@@ -45,7 +45,10 @@ export default function EventDetailsScreen() {
     confirmSettlement,
     rejectSettlement,
     forceResolveTransaction,
+    cancelTransaction,
     deleteEvent,
+    leaveEvent,
+    removeMember,
   } = useEvents();
 
   const [
@@ -76,6 +79,59 @@ export default function EventDetailsScreen() {
   const [
     deleteError,
     setDeleteError,
+  ] = useState("");
+
+  const [
+    cancelConfirmingId,
+    setCancelConfirmingId,
+  ] = useState<string | null>(
+    null
+  );
+
+  const [
+    cancellingId,
+    setCancellingId,
+  ] = useState<string | null>(
+    null
+  );
+
+  const [
+    cancelError,
+    setCancelError,
+  ] = useState("");
+
+  const [
+    showLeaveConfirmation,
+    setShowLeaveConfirmation,
+  ] = useState(false);
+
+  const [
+    leavingEvent,
+    setLeavingEvent,
+  ] = useState(false);
+
+  const [
+    leaveError,
+    setLeaveError,
+  ] = useState("");
+
+  const [
+    removeConfirmingId,
+    setRemoveConfirmingId,
+  ] = useState<string | null>(
+    null
+  );
+
+  const [
+    removingId,
+    setRemovingId,
+  ] = useState<string | null>(
+    null
+  );
+
+  const [
+    removeError,
+    setRemoveError,
   ] = useState("");
 
   useFocusEffect(
@@ -158,6 +214,141 @@ export default function EventDetailsScreen() {
     router.replace("/");
   }
 
+  function handleCancelPress(
+    transactionId: string
+  ) {
+    setCancelError("");
+    setCancelConfirmingId(
+      transactionId
+    );
+  }
+
+  function handleCancelDismiss() {
+    setCancelConfirmingId(null);
+    setCancelError("");
+  }
+
+  async function handleCancelConfirm(
+    transactionId: string
+  ) {
+    if (!event) {
+      return;
+    }
+
+    setCancellingId(
+      transactionId
+    );
+    setCancelError("");
+
+    const error =
+      await cancelTransaction(
+        event.id,
+        transactionId
+      );
+
+    setCancellingId(null);
+
+    if (error) {
+      setCancelError(error);
+      return;
+    }
+
+    setCancelConfirmingId(null);
+  }
+
+  function handleEditPress(
+    transaction: Transaction
+  ) {
+    if (!event) {
+      return;
+    }
+
+    router.push({
+      pathname:
+        "/events/[id]/add-transaction",
+
+      params: {
+        id: event.id,
+        transactionId:
+          transaction.id,
+      },
+    });
+  }
+
+  function handleLeavePress() {
+    setLeaveError("");
+    setShowLeaveConfirmation(
+      true
+    );
+  }
+
+  function handleLeaveDismiss() {
+    setShowLeaveConfirmation(
+      false
+    );
+    setLeaveError("");
+  }
+
+  async function handleLeaveConfirm() {
+    if (!event) {
+      return;
+    }
+
+    setLeavingEvent(true);
+    setLeaveError("");
+
+    const error =
+      await leaveEvent(event.id);
+
+    if (error) {
+      setLeavingEvent(false);
+      setLeaveError(error);
+      return;
+    }
+
+    router.replace("/");
+  }
+
+  function handleRemovePress(
+    memberId: string
+  ) {
+    setRemoveError("");
+    setRemoveConfirmingId(
+      memberId
+    );
+  }
+
+  function handleRemoveDismiss() {
+    setRemoveConfirmingId(null);
+    setRemoveError("");
+  }
+
+  async function handleRemoveConfirm(
+    memberId: string
+  ) {
+    if (!event) {
+      return;
+    }
+
+    setRemovingId(memberId);
+    setRemoveError("");
+
+    const error =
+      await removeMember(
+        event.id,
+        memberId
+      );
+
+    setRemovingId(null);
+
+    if (error) {
+      setRemoveError(error);
+      return;
+    }
+
+    setRemoveConfirmingId(null);
+  }
+
   if (!event) {
     return (
       <View
@@ -202,6 +393,15 @@ export default function EventDetailsScreen() {
       (transaction) =>
         transaction.status ===
         "settled"
+    );
+
+  const declinedTransactions =
+    event.transactions.filter(
+      (transaction) =>
+        transaction.status ===
+          "rejected" ||
+        transaction.status ===
+          "cancelled"
     );
 
   function formatDate(
@@ -460,20 +660,139 @@ export default function EventDetailsScreen() {
                 styles.memberCard
               }
             >
-              <Text
+              <View
                 style={
-                  styles.memberName
+                  styles.memberHeaderRow
                 }
               >
-                {
-                  member.displayName
-                }
+                <Text
+                  style={
+                    styles.memberName
+                  }
+                >
+                  {
+                    member.displayName
+                  }
 
-                {member.id ===
-                currentUserId
-                  ? " (You)"
-                  : ""}
-              </Text>
+                  {member.id ===
+                  currentUserId
+                    ? " (You)"
+                    : ""}
+                </Text>
+
+                {isCreator &&
+                member.id !==
+                  currentUserId &&
+                removeConfirmingId !==
+                  member.id ? (
+                  <Pressable
+                    onPress={() =>
+                      handleRemovePress(
+                        member.id
+                      )
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.removeMemberText
+                      }
+                    >
+                      Remove
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+
+              {removeConfirmingId ===
+              member.id ? (
+                <View
+                  style={
+                    styles.inlineConfirmBox
+                  }
+                >
+                  <Text
+                    style={
+                      styles.inlineConfirmText
+                    }
+                  >
+                    Remove{" "}
+                    {
+                      member.displayName
+                    }{" "}
+                    from this event?
+                  </Text>
+
+                  {removeError ? (
+                    <Text
+                      style={
+                        styles.errorText
+                      }
+                    >
+                      {removeError}
+                    </Text>
+                  ) : null}
+
+                  <View
+                    style={
+                      styles.inlineConfirmActions
+                    }
+                  >
+                    <Pressable
+                      style={
+                        styles.cancelButton
+                      }
+                      onPress={
+                        handleRemoveDismiss
+                      }
+                      disabled={
+                        removingId ===
+                        member.id
+                      }
+                    >
+                      <Text
+                        style={
+                          styles.cancelButtonText
+                        }
+                      >
+                        Cancel
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={[
+                        styles.confirmDeleteButton,
+                        removingId ===
+                          member.id &&
+                          styles.disabledButton,
+                      ]}
+                      onPress={() =>
+                        handleRemoveConfirm(
+                          member.id
+                        )
+                      }
+                      disabled={
+                        removingId ===
+                        member.id
+                      }
+                    >
+                      {removingId ===
+                      member.id ? (
+                        <ActivityIndicator
+                          color="white"
+                        />
+                      ) : (
+                        <Text
+                          style={
+                            styles.confirmDeleteButtonText
+                          }
+                        >
+                          Remove
+                        </Text>
+                      )}
+                    </Pressable>
+                  </View>
+                </View>
+              ) : null}
             </View>
           )
         )}
@@ -644,6 +963,142 @@ export default function EventDetailsScreen() {
                       </Text>
                     </Pressable>
                   </View>
+                ) : currentUserId ===
+                  transaction.debtorId ? (
+                  cancelConfirmingId ===
+                  transaction.id ? (
+                    <View
+                      style={
+                        styles.inlineConfirmBox
+                      }
+                    >
+                      <Text
+                        style={
+                          styles.inlineConfirmText
+                        }
+                      >
+                        Cancel this
+                        transaction?
+                      </Text>
+
+                      {cancelError ? (
+                        <Text
+                          style={
+                            styles.errorText
+                          }
+                        >
+                          {
+                            cancelError
+                          }
+                        </Text>
+                      ) : null}
+
+                      <View
+                        style={
+                          styles.inlineConfirmActions
+                        }
+                      >
+                        <Pressable
+                          style={
+                            styles.cancelButton
+                          }
+                          onPress={
+                            handleCancelDismiss
+                          }
+                          disabled={
+                            cancellingId ===
+                            transaction.id
+                          }
+                        >
+                          <Text
+                            style={
+                              styles.cancelButtonText
+                            }
+                          >
+                            Keep It
+                          </Text>
+                        </Pressable>
+
+                        <Pressable
+                          style={[
+                            styles.confirmDeleteButton,
+                            cancellingId ===
+                              transaction.id &&
+                              styles.disabledButton,
+                          ]}
+                          onPress={() =>
+                            handleCancelConfirm(
+                              transaction.id
+                            )
+                          }
+                          disabled={
+                            cancellingId ===
+                            transaction.id
+                          }
+                        >
+                          {cancellingId ===
+                          transaction.id ? (
+                            <ActivityIndicator
+                              color="white"
+                            />
+                          ) : (
+                            <Text
+                              style={
+                                styles.confirmDeleteButtonText
+                              }
+                            >
+                              Cancel
+                              Transaction
+                            </Text>
+                          )}
+                        </Pressable>
+                      </View>
+                    </View>
+                  ) : (
+                    <View
+                      style={
+                        styles.actionRow
+                      }
+                    >
+                      <Pressable
+                        style={
+                          styles.primaryButton
+                        }
+                        onPress={() =>
+                          handleEditPress(
+                            transaction
+                          )
+                        }
+                      >
+                        <Text
+                          style={
+                            styles.primaryButtonText
+                          }
+                        >
+                          Edit
+                        </Text>
+                      </Pressable>
+
+                      <Pressable
+                        style={
+                          styles.rejectButton
+                        }
+                        onPress={() =>
+                          handleCancelPress(
+                            transaction.id
+                          )
+                        }
+                      >
+                        <Text
+                          style={
+                            styles.rejectButtonText
+                          }
+                        >
+                          Cancel
+                        </Text>
+                      </Pressable>
+                    </View>
+                  )
                 ) : (
                   <Text
                     style={
@@ -983,6 +1438,86 @@ export default function EventDetailsScreen() {
           )
         )}
 
+        <Text
+          style={
+            styles.sectionTitle
+          }
+        >
+          Declined
+        </Text>
+
+        {declinedTransactions.length ===
+        0 ? (
+          <Text
+            style={styles.emptyText}
+          >
+            No declined transactions.
+          </Text>
+        ) : (
+          declinedTransactions.map(
+            (transaction) => (
+              <View
+                key={
+                  transaction.id
+                }
+                style={
+                  styles.settledCard
+                }
+              >
+                <Text
+                  style={
+                    styles.transactionSummary
+                  }
+                >
+                  {
+                    transaction.debtorName
+                  }{" "}
+                  owes{" "}
+                  {
+                    transaction.creditorName
+                  }{" "}
+                  £
+                  {(
+                    transaction.amountInPence /
+                    100
+                  ).toFixed(2)}
+                </Text>
+
+                <Text
+                  style={
+                    styles.transactionDescription
+                  }
+                >
+                  {
+                    transaction.description
+                  }
+                </Text>
+
+                <Text
+                  style={
+                    styles.transactionDate
+                  }
+                >
+                  {formatDate(
+                    transaction.createdAt
+                  )}
+                </Text>
+
+                <Text
+                  style={
+                    styles.settledText
+                  }
+                >
+                  {transaction.status ===
+                  "cancelled"
+                    ? `Cancelled by ${transaction.debtorName}`
+                    : `Rejected by ${transaction.creditorName}`}
+                </Text>
+              </View>
+            )
+          )
+        )}
+
         {event.members.length >= 2 ? (
           <Pressable
             style={
@@ -1122,6 +1657,120 @@ export default function EventDetailsScreen() {
             </View>
           </View>
         ) : null}
+
+        {!isCreator &&
+        !showLeaveConfirmation ? (
+          <Pressable
+            style={
+              styles.deleteButton
+            }
+            onPress={
+              handleLeavePress
+            }
+          >
+            <Text
+              style={
+                styles.deleteButtonText
+              }
+            >
+              Leave Event
+            </Text>
+          </Pressable>
+        ) : null}
+
+        {!isCreator &&
+        showLeaveConfirmation ? (
+          <View
+            style={
+              styles.deleteConfirmationBox
+            }
+          >
+            <Text
+              style={
+                styles.deleteConfirmationTitle
+              }
+            >
+              Leave &quot;
+              {event.name}&quot;?
+            </Text>
+
+            <Text
+              style={
+                styles.deleteConfirmationText
+              }
+            >
+              You&apos;ll lose access
+              to this event and its
+              transaction history. The
+              event stays intact for
+              everyone else.
+            </Text>
+
+            {leaveError ? (
+              <Text
+                style={
+                  styles.errorText
+                }
+              >
+                {leaveError}
+              </Text>
+            ) : null}
+
+            <View
+              style={
+                styles.deleteConfirmationActions
+              }
+            >
+              <Pressable
+                style={
+                  styles.cancelButton
+                }
+                onPress={
+                  handleLeaveDismiss
+                }
+                disabled={
+                  leavingEvent
+                }
+              >
+                <Text
+                  style={
+                    styles.cancelButtonText
+                  }
+                >
+                  Cancel
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={[
+                  styles.confirmDeleteButton,
+                  leavingEvent &&
+                    styles.disabledButton,
+                ]}
+                onPress={
+                  handleLeaveConfirm
+                }
+                disabled={
+                  leavingEvent
+                }
+              >
+                {leavingEvent ? (
+                  <ActivityIndicator
+                    color="white"
+                  />
+                ) : (
+                  <Text
+                    style={
+                      styles.confirmDeleteButtonText
+                    }
+                  >
+                    Yes, Leave Event
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -1218,6 +1867,41 @@ const styles =
       fontSize: 16,
       fontWeight: "500",
       color: "#111827",
+    },
+
+    memberHeaderRow: {
+      flexDirection: "row",
+      justifyContent:
+        "space-between",
+      alignItems: "center",
+      gap: 10,
+    },
+
+    removeMemberText: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: "#DC2626",
+    },
+
+    inlineConfirmBox: {
+      marginTop: 12,
+      borderWidth: 1,
+      borderColor: "#FCA5A5",
+      borderRadius: 10,
+      padding: 12,
+      backgroundColor: "#FEF2F2",
+    },
+
+    inlineConfirmText: {
+      fontSize: 14,
+      color: "#7F1D1D",
+      lineHeight: 20,
+    },
+
+    inlineConfirmActions: {
+      flexDirection: "row",
+      gap: 10,
+      marginTop: 12,
     },
 
     memberRow: {
