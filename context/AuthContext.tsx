@@ -114,9 +114,18 @@ export function AuthProvider({
   useEffect(() => {
     let mounted = true;
 
+    /*
+     * `loading` is only ever touched here, during the app's
+     * very first boot. _layout.tsx fully unmounts the Stack
+     * navigator while it's true, so toggling it again later
+     * (e.g. on sign-in/sign-out) would tear down and remount
+     * an already-mounted navigator, which resets Expo
+     * Router's resolved route. Stack.Protected's guards
+     * already react to session/profile changing on their
+     * own without needing that - see the onAuthStateChange
+     * handler below, which deliberately never touches it.
+     */
     async function initialise() {
-      setLoading(true);
-
       const {
         data: {
           session:
@@ -176,7 +185,6 @@ export function AuthProvider({
             if (!newSession) {
               setSession(null);
               setProfile(null);
-              setLoading(false);
               return;
             }
 
@@ -185,11 +193,17 @@ export function AuthProvider({
              * but we do not yet know whether
              * they already have a profile.
              *
-             * Keep the app on the loading
-             * screen until that check finishes.
+             * profile stays null until
+             * loadProfile resolves, so the
+             * !!session && !profile guard
+             * briefly shows create-profile
+             * for a returning user before
+             * flipping to the signed-in
+             * group once their profile is
+             * found - a minor flicker, but
+             * one that doesn't require ever
+             * unmounting the Stack.
              */
-            setLoading(true);
-
             setSession(
               newSession
             );
@@ -209,10 +223,6 @@ export function AuthProvider({
                 await loadProfile(
                   newSession
                 );
-
-                if (mounted) {
-                  setLoading(false);
-                }
               },
               0
             );
