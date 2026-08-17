@@ -75,8 +75,17 @@ export function AuthProvider({
   }
 
   async function refreshProfile() {
-    setLoading(true);
-
+    /*
+     * Deliberately does not touch `loading`. That flag
+     * gates whether _layout.tsx renders the Stack navigator
+     * at all - flipping it here would unmount and remount
+     * the whole navigator on every routine profile refresh
+     * (e.g. after editing your display name), which resets
+     * Expo Router's resolved route and can land you on an
+     * unrelated screen. `loading` should only reflect "we
+     * don't yet know the auth state" (initial boot, sign-in/
+     * sign-out), not "a profile field just changed".
+     */
     const {
       data: {
         session: currentSession,
@@ -92,7 +101,6 @@ export function AuthProvider({
         error.message
       );
 
-      setLoading(false);
       return;
     }
 
@@ -101,8 +109,6 @@ export function AuthProvider({
     await loadProfile(
       currentSession
     );
-
-    setLoading(false);
   }
 
   useEffect(() => {
