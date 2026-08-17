@@ -15,9 +15,20 @@ export type Profile = {
   display_name: string;
 };
 
+/*
+ * profile is a three-state value, not a boolean-ish
+ * nullable: `undefined` means "there's a session but we
+ * haven't checked whether it has a profile yet", `null`
+ * means "checked, confirmed no profile", and Profile means
+ * "checked, found one". Collapsing the first two into a
+ * single `null` (as this used to do) is what caused the
+ * create-profile screen to flash for returning users on
+ * sign-in - the guard in _layout.tsx couldn't tell "still
+ * checking" apart from "definitely no profile".
+ */
 type AuthContextType = {
   session: Session | null;
-  profile: Profile | null;
+  profile: Profile | null | undefined;
   loading: boolean;
   refreshProfile: () => Promise<void>;
 };
@@ -36,7 +47,9 @@ export function AuthProvider({
     useState<Session | null>(null);
 
   const [profile, setProfile] =
-    useState<Profile | null>(null);
+    useState<
+      Profile | null | undefined
+    >(undefined);
 
   const [loading, setLoading] =
     useState(true);
@@ -192,23 +205,19 @@ export function AuthProvider({
              * We have authenticated the user,
              * but we do not yet know whether
              * they already have a profile.
-             *
-             * profile stays null until
-             * loadProfile resolves, so the
-             * !!session && !profile guard
-             * briefly shows create-profile
-             * for a returning user before
-             * flipping to the signed-in
-             * group once their profile is
-             * found - a minor flicker, but
-             * one that doesn't require ever
-             * unmounting the Stack.
+             * profile goes to undefined (not
+             * null) specifically so
+             * _layout.tsx can show a neutral
+             * loading screen instead of
+             * flashing create-profile for
+             * returning users, without ever
+             * needing to unmount the Stack.
              */
             setSession(
               newSession
             );
 
-            setProfile(null);
+            setProfile(undefined);
 
             /*
              * Defer Supabase database work

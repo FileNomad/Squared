@@ -75,10 +75,31 @@ function AppNavigator() {
           />
         </Stack.Protected>
 
+        {/*
+          profile === undefined: session exists but we
+          haven't checked yet whether it has a profile.
+          Distinct from profile === null (checked, confirmed
+          none) below - see the comment on AuthContextType.
+        */}
         <Stack.Protected
           guard={
             !!session &&
-            !profile
+            profile ===
+              undefined
+          }
+        >
+          <Stack.Screen
+            name="loading"
+            options={{
+              headerShown: false,
+            }}
+          />
+        </Stack.Protected>
+
+        <Stack.Protected
+          guard={
+            !!session &&
+            profile === null
           }
         >
           <Stack.Screen
