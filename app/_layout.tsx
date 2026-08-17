@@ -66,7 +66,29 @@ function AppNavigator() {
               headerShown: false,
             }}
           />
+
+          <Stack.Screen
+            name="forgot-password"
+            options={{
+              headerShown: false,
+            }}
+          />
         </Stack.Protected>
+
+        {/*
+          Not wrapped in a Stack.Protected guard: the
+          recovery link authenticates the user (session
+          becomes truthy) before they've actually set a new
+          password, so this screen has to stay reachable
+          through that transition rather than being hidden
+          by the signed-in/signed-out guards above/below.
+        */}
+        <Stack.Screen
+          name="reset-password"
+          options={{
+            headerShown: false,
+          }}
+        />
 
         <Stack.Protected
           guard={

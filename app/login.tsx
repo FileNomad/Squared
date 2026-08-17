@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { useState } from "react";
 import {
   Pressable,
@@ -184,6 +185,25 @@ export default function LoginScreen() {
           </Pressable>
         </View>
 
+        <Pressable
+          style={
+            styles.forgotPasswordButton
+          }
+          onPress={() =>
+            router.push(
+              "/forgot-password"
+            )
+          }
+        >
+          <Text
+            style={
+              styles.forgotPasswordText
+            }
+          >
+            Forgot password?
+          </Text>
+        </Pressable>
+
         {error ? (
           <Text
             style={
@@ -325,6 +345,17 @@ const styles =
     },
 
     showButtonText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: "#374151",
+    },
+
+    forgotPasswordButton: {
+      alignSelf: "flex-end",
+      marginBottom: 14,
+    },
+
+    forgotPasswordText: {
       fontSize: 14,
       fontWeight: "600",
       color: "#374151",
