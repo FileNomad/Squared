@@ -2,8 +2,8 @@
 
 This directory is the version-controlled source of truth for the
 Supabase project backing GroupFinance: tables, RLS policies, RPC
-functions, and Edge Functions. Previously all of this lived only in
-the Supabase dashboard.
+functions, Edge Functions, and database tests. Previously all of
+this lived only in the Supabase dashboard.
 
 ## Applying migrations
 
@@ -13,25 +13,15 @@ table if not exists`, `drop policy if exists` + `create policy`,
 safe to run them against either a fresh project or the existing
 live one - re-running an already-applied file is a no-op.
 
-**Only `20260816120003_force_resolve_stuck_transactions.sql` is
-new** as of this cleanup - the other three reproduce what's
-already live. That file has not been run against the live project
-yet, and needs to be for the "resolve a transaction stuck on a
-deleted member" fix to work.
-
 ### Quick path: SQL Editor (no setup)
 
-Since the earlier files are already applied by hand, the fastest
-way to ship just the fix is to open the SQL Editor in the Supabase
-dashboard and paste in
-`20260816120003_force_resolve_stuck_transactions.sql`. Nothing to
-install or link.
+Open the SQL Editor in the Supabase dashboard and paste in
+whichever migration file hasn't been applied yet, in filename
+order. Nothing to install or link.
 
 ### Proper path: Supabase CLI (`supabase db push`)
 
-This repo has never been linked to a Supabase project via the CLI,
-so `supabase db push` will not work out of the box yet. One-time
-setup:
+One-time setup, if this repo isn't linked yet:
 
 ```bash
 npx supabase login
@@ -41,18 +31,30 @@ npx supabase link --project-ref <your-project-ref>
 (`<your-project-ref>` is the id in your project's dashboard URL,
 `https://supabase.com/dashboard/project/<project-ref>`.)
 
-Because the first three migrations were applied by hand rather
-than through the CLI, your project's remote migration history has
-no record of them - `supabase db push` will try to apply all four
-files, not just the new one. That's safe here since every file is
-idempotent, but it's worth knowing before you run it rather than
-being surprised. After the first `db push`, the CLI's remote
-history is in sync and future pushes will only apply what's
-actually new.
-
 ```bash
 npx supabase db push
 ```
+
+`supabase migration list` shows which migrations are applied
+locally vs. on the remote, if you want to check before pushing.
+
+## Running the database tests
+
+`tests/database/rls_security.test.sql` is a pgTAP suite that
+exercises RLS policies and RPCs directly - things like "can a
+non-creator delete someone else's event" or "can a user insert a
+transaction that's already marked settled, skipping confirmation."
+It needs a local Postgres, which the Supabase CLI provisions via
+Docker:
+
+```bash
+supabase start
+supabase test db
+```
+
+`supabase start` installs the `supabase_test_helpers` extension
+these tests rely on (`tests.create_supabase_user()`,
+`tests.authenticate_as()`) automatically the first time it runs.
 
 ## Deploying the Edge Function
 

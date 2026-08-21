@@ -11,6 +11,7 @@ import {
 
 import { useAuth } from "../context/AuthContext";
 import { useEvents } from "../context/EventContext";
+import { calculatePersonalBalances } from "../lib/balances";
 
 export default function BalancesScreen() {
   const { session } = useAuth();
@@ -66,63 +67,16 @@ export default function BalancesScreen() {
     );
   }
 
-  /*
-   * Positive balance[id] means id owes the current user;
-   * negative means the current user owes id. Only
-   * confirmed/payment_pending transactions count as real
-   * outstanding money, matching the per-event Net Balance
-   * calculation in events/[id]/index.tsx.
-   */
-  const balances: Record<
-    string,
-    number
-  > = {};
-
-  events.forEach((event) => {
-    event.transactions.forEach(
-      (transaction) => {
-        if (
-          transaction.status !==
-            "confirmed" &&
-          transaction.status !==
-            "payment_pending"
-        ) {
-          return;
-        }
-
-        const isDebtor =
-          transaction.debtorId ===
-          currentUserId;
-
-        const isCreditor =
-          transaction.creditorId ===
-          currentUserId;
-
-        if (
-          !isDebtor &&
-          !isCreditor
-        ) {
-          return;
-        }
-
-        const counterpartyId =
-          isDebtor
-            ? transaction.creditorId
-            : transaction.debtorId;
-
-        const delta = isDebtor
-          ? -transaction.amountInPence
-          : transaction.amountInPence;
-
-        balances[
-          counterpartyId
-        ] =
-          (balances[
-            counterpartyId
-          ] ?? 0) + delta;
-      }
+  const allTransactions =
+    events.flatMap(
+      (event) => event.transactions
     );
-  });
+
+  const balances =
+    calculatePersonalBalances(
+      allTransactions,
+      currentUserId
+    );
 
   const entries = Object.entries(
     balances

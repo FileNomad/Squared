@@ -22,6 +22,7 @@ import {
   Transaction,
   useEvents,
 } from "../../../context/EventContext";
+import { calculatePairwiseBalances } from "../../../lib/balances";
 
 export default function EventDetailsScreen() {
   const { id } =
@@ -540,39 +541,10 @@ export default function EventDetailsScreen() {
     );
   }
 
-  function calculatePairBalances() {
-    const balances: Record<
-      string,
-      number
-    > = {};
-
-    activeTransactions.forEach(
-      (transaction) => {
-        const pair = [
-          transaction.debtorId,
-          transaction.creditorId,
-        ]
-          .sort()
-          .join("|");
-
-        const direction =
-          transaction.debtorId <
-          transaction.creditorId
-            ? 1
-            : -1;
-
-        balances[pair] =
-          (balances[pair] || 0) +
-          transaction.amountInPence *
-            direction;
-      }
-    );
-
-    return balances;
-  }
-
   const balances =
-    calculatePairBalances();
+    calculatePairwiseBalances(
+      event.transactions
+    );
 
   const outstandingBalances =
     Object.entries(
