@@ -11,6 +11,17 @@
 -- auth.uid(), because the Edge Function is the only
 -- caller and has already done that verification. Do not
 -- add a grant here without adding that check first.
+--
+-- The revoke below is not optional cleanup: Postgres
+-- grants EXECUTE on a new function to PUBLIC by default -
+-- unlike tables, which default to no access. Supabase's
+-- hosted platform happens to revoke that automatically for
+-- new functions, but a local `supabase start` does not
+-- (confirmed directly - a fresh local instance leaves this
+-- function callable by `authenticated` until revoked here).
+-- Relying on a platform default you can't verify holds in
+-- every environment is exactly the kind of implicit
+-- assumption this project has been burned by before.
 -- -----------------------------------------------------
 
 create or replace function public.prepare_account_deletion(
@@ -108,3 +119,7 @@ begin
   where id = p_user_id;
 end;
 $$;
+
+revoke execute
+on function public.prepare_account_deletion(uuid)
+from public;

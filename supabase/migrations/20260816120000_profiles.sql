@@ -25,39 +25,20 @@ enable row level security;
 grant select, insert, update on public.profiles to authenticated;
 
 -- -----------------------------------------------------
--- HELPER FUNCTIONS
---
--- Defined here because the profiles RLS policy below
--- depends on shares_event_with_user(), which in turn
--- reads event_members. Declared before that table exists
--- is fine in Postgres as long as it exists by the time the
--- function is first *called*.
--- -----------------------------------------------------
-
-create or replace function public.shares_event_with_user(
-  p_user_id uuid
-)
-returns boolean
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select exists (
-    select 1
-    from public.event_members mine
-    join public.event_members theirs
-      on theirs.event_id = mine.event_id
-    where mine.user_id = (select auth.uid())
-      and theirs.user_id = p_user_id
-  );
-$$;
-
--- -----------------------------------------------------
 -- PROFILE RLS
 --
--- Only your own profile and profiles of people you share
--- an event with are visible - not every registered user.
+-- The select policy here is deliberately narrower than
+-- the final version: "only your own profile" rather than
+-- "your own or anyone you share an event with". The fuller
+-- version depends on shares_event_with_user(), which reads
+-- event_members - a table that doesn't exist yet at this
+-- point in the migration sequence (it's created in
+-- 20260816120001). Unlike a plpgsql function, a `language
+-- sql` function's body is parsed and validated immediately
+-- at CREATE FUNCTION time, so it can't reference a
+-- not-yet-existing table the way a plpgsql function could.
+-- 20260816120001 drops and replaces this policy with the
+-- real one once event_members exists.
 -- -----------------------------------------------------
 
 drop policy if exists
@@ -74,7 +55,6 @@ for select
 to authenticated
 using (
   id = (select auth.uid())
-  or public.shares_event_with_user(id)
 );
 
 drop policy if exists

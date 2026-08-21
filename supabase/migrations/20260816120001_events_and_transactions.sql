@@ -148,6 +148,52 @@ as $$
 $$;
 
 
+-- Moved here from 20260816120000: this is a `language sql`
+-- function, so its body is validated at CREATE FUNCTION
+-- time and event_members has to already exist - it doesn't
+-- yet at the point profiles.sql runs.
+create or replace function public.shares_event_with_user(
+  p_user_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.event_members mine
+    join public.event_members theirs
+      on theirs.event_id = mine.event_id
+    where mine.user_id = (select auth.uid())
+      and theirs.user_id = p_user_id
+  );
+$$;
+
+
+-- -----------------------------------------------------
+-- PROFILE RLS (continued from 20260816120000)
+--
+-- Replaces the self-only policy created there with the
+-- real one, now that shares_event_with_user() above can
+-- actually be defined.
+-- -----------------------------------------------------
+
+drop policy if exists
+"Users can view relevant profiles"
+on public.profiles;
+
+create policy "Users can view relevant profiles"
+on public.profiles
+for select
+to authenticated
+using (
+  id = (select auth.uid())
+  or public.shares_event_with_user(id)
+);
+
+
 -- -----------------------------------------------------
 -- EVENT RLS
 -- -----------------------------------------------------

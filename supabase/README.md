@@ -45,16 +45,33 @@ exercises RLS policies and RPCs directly - things like "can a
 non-creator delete someone else's event" or "can a user insert a
 transaction that's already marked settled, skipping confirmation."
 It needs a local Postgres, which the Supabase CLI provisions via
-Docker:
+Docker (Docker Desktop has to actually be installed and running
+first):
 
 ```bash
-supabase start
-supabase test db
+npx supabase start
+npx supabase test db
 ```
 
-`supabase start` installs the `supabase_test_helpers` extension
-these tests rely on (`tests.create_supabase_user()`,
-`tests.authenticate_as()`) automatically the first time it runs.
+`supabase start` replays every migration from scratch, which is
+itself a useful check - it's how the migration-ordering bug in
+`20260816120000`/`20260816120001` (a `language sql` function
+referencing a table that didn't exist yet at that point in the
+sequence) actually got caught, since the live project's migrations
+were never all applied in this exact order from an empty database
+until then.
+
+Different users are simulated by setting `request.jwt.claim.sub`
+directly (the same session GUC `auth.uid()` itself reads) rather
+than via the `supabase_test_helpers` extension - that extension
+isn't installed by a stock `supabase start`, so this suite runs
+without any extra setup beyond Docker.
+
+`supabase db advisors --linked --type security` is also worth
+running periodically - Supabase's own linter caught something this
+test suite didn't: several functions here defaulted to Postgres's
+built-in "EXECUTE granted to PUBLIC" behavior, since nothing had
+explicitly revoked it. See `20260817140000` and `20260817150000`.
 
 ## Deploying the Edge Function
 
