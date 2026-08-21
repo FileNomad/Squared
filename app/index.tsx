@@ -74,6 +74,22 @@ export default function HomeScreen() {
             <Pressable
               onPress={() =>
                 router.push(
+                  "/balances"
+                )
+              }
+            >
+              <Text
+                style={
+                  styles.accountText
+                }
+              >
+                Balances
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() =>
+                router.push(
                   "/account"
                 )
               }

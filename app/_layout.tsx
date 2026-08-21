@@ -131,6 +131,13 @@ function AppNavigator() {
           />
 
           <Stack.Screen
+            name="balances"
+            options={{
+              title: "Balances",
+            }}
+          />
+
+          <Stack.Screen
             name="create-event"
             options={{
               title:
