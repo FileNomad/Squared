@@ -1,7 +1,7 @@
 import {
   DarkTheme,
   DefaultTheme,
-  ThemeProvider,
+  ThemeProvider as NavigationThemeProvider,
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -12,12 +12,15 @@ import {
 } from "react-native";
 import "react-native-reanimated";
 
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import {
   AuthProvider,
   useAuth,
 } from "../context/AuthContext";
 import { EventProvider } from "../context/EventContext";
+import {
+  ThemeProvider,
+  useTheme,
+} from "../context/ThemeContext";
 
 function AppNavigator() {
   const {
@@ -26,30 +29,52 @@ function AppNavigator() {
     loading,
   } = useAuth();
 
-  const colorScheme =
-    useColorScheme();
+  const { colorScheme, colors } =
+    useTheme();
 
   if (loading) {
     return (
       <View
-        style={styles.loadingContainer}
+        style={[
+          styles.loadingContainer,
+          {
+            backgroundColor:
+              colors.background,
+          },
+        ]}
       >
         <ActivityIndicator
           size="large"
+          color={colors.primary}
         />
       </View>
     );
   }
 
   return (
-    <ThemeProvider
+    <NavigationThemeProvider
       value={
         colorScheme === "dark"
           ? DarkTheme
           : DefaultTheme
       }
     >
-      <Stack>
+      <Stack
+        screenOptions={{
+          headerStyle: {
+            backgroundColor:
+              colors.background,
+          },
+          headerTintColor:
+            colors.textPrimary,
+          headerShadowVisible:
+            false,
+          contentStyle: {
+            backgroundColor:
+              colors.background,
+          },
+        }}
+      >
         <Stack.Protected
           guard={!session}
         >
@@ -190,19 +215,25 @@ function AppNavigator() {
       </Stack>
 
       <StatusBar
-        style="auto"
+        style={
+          colorScheme === "dark"
+            ? "light"
+            : "dark"
+        }
       />
-    </ThemeProvider>
+    </NavigationThemeProvider>
   );
 }
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <EventProvider>
-        <AppNavigator />
-      </EventProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <EventProvider>
+          <AppNavigator />
+        </EventProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

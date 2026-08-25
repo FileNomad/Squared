@@ -1,16 +1,28 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { ScreenContainer } from "../components/ui/ScreenContainer";
+import { TextField } from "../components/ui/TextField";
+import {
+  FontSize,
+  Radius,
+  Spacing,
+} from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 import { supabase } from "../lib/supabase";
 
 export default function LoginScreen() {
+  const { colors } = useTheme();
+
   const [email, setEmail] =
     useState("");
 
@@ -19,11 +31,6 @@ export default function LoginScreen() {
 
   const [loading, setLoading] =
     useState(false);
-
-  const [
-    passwordVisible,
-    setPasswordVisible,
-  ] = useState(false);
 
   const [error, setError] =
     useState("");
@@ -107,83 +114,83 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>
-          Group Finance
-        </Text>
+    <ScreenContainer centered>
+      <View
+        style={styles.badgeRow}
+      >
+        <View
+          style={[
+            styles.badge,
+            {
+              backgroundColor:
+                colors.primary,
+            },
+          ]}
+        >
+          <Ionicons
+            name="wallet-outline"
+            size={28}
+            color={
+              colors.onPrimary
+            }
+          />
+        </View>
+      </View>
 
-        <Text style={styles.subtitle}>
-          Sign in to continue
-        </Text>
+      <Text
+        style={[
+          styles.title,
+          {
+            color:
+              colors.textPrimary,
+          },
+        ]}
+      >
+        Group Finance
+      </Text>
 
-        <Text style={styles.label}>
-          Email
-        </Text>
+      <Text
+        style={[
+          styles.subtitle,
+          {
+            color:
+              colors.textSecondary,
+          },
+        ]}
+      >
+        Sign in to continue
+      </Text>
 
-        <TextInput
-          style={styles.input}
+      <Card>
+        <TextField
+          label="Email"
           placeholder="you@example.com"
-          placeholderTextColor="#9CA3AF"
           autoCapitalize="none"
           keyboardType="email-address"
           autoCorrect={false}
           value={email}
-          onChangeText={(value) => {
+          onChangeText={(
+            value
+          ) => {
             setEmail(value);
             setError("");
           }}
           editable={!loading}
         />
 
-        <Text style={styles.label}>
-          Password
-        </Text>
-
-        <View
-          style={
-            styles.passwordContainer
-          }
-        >
-          <TextInput
-            style={
-              styles.passwordInput
-            }
-            placeholder="Enter your password"
-            placeholderTextColor="#9CA3AF"
-            secureTextEntry={
-              !passwordVisible
-            }
-            value={password}
-            onChangeText={(value) => {
-              setPassword(value);
-              setError("");
-            }}
-            editable={!loading}
-          />
-
-          <Pressable
-            style={
-              styles.showButton
-            }
-            onPress={() =>
-              setPasswordVisible(
-                (current) =>
-                  !current
-              )
-            }
-          >
-            <Text
-              style={
-                styles.showButtonText
-              }
-            >
-              {passwordVisible
-                ? "Hide"
-                : "Show"}
-            </Text>
-          </Pressable>
-        </View>
+        <TextField
+          label="Password"
+          placeholder="Enter your password"
+          secureToggle
+          value={password}
+          onChangeText={(
+            value
+          ) => {
+            setPassword(value);
+            setError("");
+          }}
+          editable={!loading}
+        />
 
         <Pressable
           style={
@@ -196,9 +203,13 @@ export default function LoginScreen() {
           }
         >
           <Text
-            style={
-              styles.forgotPasswordText
-            }
+            style={[
+              styles.forgotPasswordText,
+              {
+                color:
+                  colors.textSecondary,
+              },
+            ]}
           >
             Forgot password?
           </Text>
@@ -206,9 +217,13 @@ export default function LoginScreen() {
 
         {error ? (
           <Text
-            style={
-              styles.errorText
-            }
+            style={[
+              styles.messageText,
+              {
+                color:
+                  colors.dangerText,
+              },
+            ]}
           >
             {error}
           </Text>
@@ -216,192 +231,99 @@ export default function LoginScreen() {
 
         {message ? (
           <Text
-            style={
-              styles.messageText
-            }
+            style={[
+              styles.messageText,
+              {
+                color:
+                  colors.successText,
+              },
+            ]}
           >
             {message}
           </Text>
         ) : null}
 
-        <Pressable
-          style={[
-            styles.primaryButton,
-            loading &&
-              styles.buttonDisabled,
-          ]}
-          onPress={
-            handleSignIn
-          }
-          disabled={loading}
-        >
-          <Text
-            style={
-              styles.primaryButtonText
-            }
-          >
-            {loading
-              ? "Signing In..."
-              : "Sign In"}
-          </Text>
-        </Pressable>
-
-        <Pressable
+        <View
           style={
-            styles.secondaryButton
+            styles.buttonSpacing
           }
-          onPress={
-            handleSignUp
-          }
-          disabled={loading}
         >
-          <Text
-            style={
-              styles.secondaryButtonText
+          <Button
+            label={
+              loading
+                ? "Signing In..."
+                : "Sign In"
             }
-          >
-            Create Account
-          </Text>
-        </Pressable>
-      </View>
-    </View>
+            onPress={
+              handleSignIn
+            }
+            loading={loading}
+          />
+        </View>
+
+        <View
+          style={
+            styles.buttonSpacing
+          }
+        >
+          <Button
+            label="Create Account"
+            variant="ghost"
+            onPress={
+              handleSignUp
+            }
+            disabled={loading}
+          />
+        </View>
+      </Card>
+    </ScreenContainer>
   );
 }
 
-const styles =
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor:
-        "#F9FAFB",
-      alignItems: "center",
-      paddingHorizontal: 24,
-      paddingTop: 90,
-    },
+const styles = StyleSheet.create({
+  badgeRow: {
+    alignItems: "center",
+    marginBottom: Spacing.lg,
+  },
 
-    card: {
-      width: "100%",
-      maxWidth: 440,
-      backgroundColor: "white",
-      borderRadius: 20,
-      padding: 28,
-      borderWidth: 1,
-      borderColor: "#E5E7EB",
-    },
+  badge: {
+    width: 56,
+    height: 56,
+    borderRadius: Radius.xl,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
-    title: {
-      fontSize: 32,
-      fontWeight: "700",
-      color: "#111827",
-    },
+  title: {
+    fontSize: FontSize.xxl,
+    fontWeight: "700",
+    textAlign: "center",
+  },
 
-    subtitle: {
-      fontSize: 16,
-      color: "#6B7280",
-      marginTop: 8,
-      marginBottom: 28,
-    },
+  subtitle: {
+    fontSize: FontSize.md,
+    textAlign: "center",
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.xl,
+  },
 
-    label: {
-      fontSize: 14,
-      fontWeight: "600",
-      color: "#374151",
-      marginBottom: 8,
-    },
+  forgotPasswordButton: {
+    alignSelf: "flex-end",
+    marginBottom: Spacing.md,
+  },
 
-    input: {
-      borderWidth: 1,
-      borderColor: "#D1D5DB",
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 14,
-      fontSize: 16,
-      color: "#111827",
-      backgroundColor: "white",
-      marginBottom: 18,
-    },
+  forgotPasswordText: {
+    fontSize: FontSize.sm,
+    fontWeight: "600",
+  },
 
-    passwordContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: "#D1D5DB",
-      borderRadius: 12,
-      backgroundColor: "white",
-      marginBottom: 10,
-    },
+  messageText: {
+    fontSize: FontSize.sm,
+    lineHeight: 20,
+    marginBottom: Spacing.md,
+  },
 
-    passwordInput: {
-      flex: 1,
-      paddingHorizontal: 14,
-      paddingVertical: 14,
-      fontSize: 16,
-      color: "#111827",
-    },
-
-    showButton: {
-      paddingHorizontal: 14,
-      paddingVertical: 14,
-    },
-
-    showButtonText: {
-      fontSize: 14,
-      fontWeight: "600",
-      color: "#374151",
-    },
-
-    forgotPasswordButton: {
-      alignSelf: "flex-end",
-      marginBottom: 14,
-    },
-
-    forgotPasswordText: {
-      fontSize: 14,
-      fontWeight: "600",
-      color: "#374151",
-    },
-
-    errorText: {
-      fontSize: 14,
-      color: "#DC2626",
-      lineHeight: 20,
-      marginBottom: 14,
-    },
-
-    messageText: {
-      fontSize: 14,
-      color: "#374151",
-      lineHeight: 20,
-      marginBottom: 14,
-    },
-
-    primaryButton: {
-      backgroundColor: "#111827",
-      paddingVertical: 15,
-      borderRadius: 12,
-      alignItems: "center",
-      marginTop: 4,
-    },
-
-    buttonDisabled: {
-      opacity: 0.5,
-    },
-
-    primaryButtonText: {
-      color: "white",
-      fontSize: 16,
-      fontWeight: "600",
-    },
-
-    secondaryButton: {
-      paddingVertical: 14,
-      alignItems: "center",
-      marginTop: 6,
-    },
-
-    secondaryButtonText: {
-      color: "#111827",
-      fontSize: 15,
-      fontWeight: "600",
-    },
-  });
+  buttonSpacing: {
+    marginTop: Spacing.sm,
+  },
+});

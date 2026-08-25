@@ -1,123 +1,140 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { ScreenContainer } from "../components/ui/ScreenContainer";
+import {
+  FontSize,
+  Radius,
+  Spacing,
+} from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
+
 export default function EmailConfirmedScreen() {
+  const { colors } = useTheme();
+
   function handleContinue() {
     router.replace("/login");
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        <View style={styles.successCircle}>
-          <Text style={styles.checkmark}>
-            ✓
-          </Text>
+    <ScreenContainer centered>
+      <Card style={styles.card}>
+        <View
+          style={[
+            styles.successCircle,
+            {
+              backgroundColor:
+                colors.successBg,
+            },
+          ]}
+        >
+          <Ionicons
+            name="checkmark"
+            size={36}
+            color={
+              colors.successText
+            }
+          />
         </View>
 
-        <Text style={styles.title}>
+        <Text
+          style={[
+            styles.title,
+            {
+              color:
+                colors.textPrimary,
+            },
+          ]}
+        >
           Email confirmed
         </Text>
 
-        <Text style={styles.description}>
+        <Text
+          style={[
+            styles.description,
+            {
+              color:
+                colors.textPrimary,
+            },
+          ]}
+        >
           Your GroupFinance account has been
           successfully confirmed.
         </Text>
 
-        <Text style={styles.secondaryText}>
+        <Text
+          style={[
+            styles.secondaryText,
+            {
+              color:
+                colors.textSecondary,
+            },
+          ]}
+        >
           You can now sign in and start using
           GroupFinance.
         </Text>
 
-        <Pressable
-          style={styles.button}
-          onPress={handleContinue}
+        <View
+          style={
+            styles.buttonSpacing
+          }
         >
-          <Text style={styles.buttonText}>
-            Continue to Sign In
-          </Text>
-        </Pressable>
-      </View>
-    </View>
+          <Button
+            label="Continue to Sign In"
+            onPress={
+              handleContinue
+            }
+          />
+        </View>
+      </Card>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F9FAFB",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 24,
-  },
-
   card: {
-    width: "100%",
-    maxWidth: 440,
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 28,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
     alignItems: "center",
   },
 
   successCircle: {
     width: 68,
     height: 68,
-    borderRadius: 34,
-    backgroundColor: "#ECFDF5",
+    borderRadius: Radius.pill,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 22,
-  },
-
-  checkmark: {
-    fontSize: 36,
-    fontWeight: "700",
-    color: "#059669",
+    marginBottom: Spacing.lg,
   },
 
   title: {
-    fontSize: 28,
+    fontSize: FontSize.xxl,
     fontWeight: "700",
-    color: "#111827",
     textAlign: "center",
   },
 
   description: {
-    fontSize: 16,
-    color: "#374151",
+    fontSize: FontSize.md,
     lineHeight: 23,
     textAlign: "center",
-    marginTop: 14,
+    marginTop: Spacing.md,
   },
 
   secondaryText: {
-    fontSize: 15,
-    color: "#6B7280",
+    fontSize: FontSize.base,
     lineHeight: 22,
     textAlign: "center",
-    marginTop: 8,
+    marginTop: Spacing.sm,
   },
 
-  button: {
+  buttonSpacing: {
     width: "100%",
-    backgroundColor: "#111827",
-    borderRadius: 12,
-    paddingVertical: 15,
-    alignItems: "center",
-    marginTop: 28,
-  },
-
-  buttonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
+    marginTop: Spacing.xl,
   },
 });

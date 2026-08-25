@@ -1,17 +1,21 @@
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { StyleSheet, Text } from "react-native";
 
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { ScreenContainer } from "../components/ui/ScreenContainer";
+import { TextField } from "../components/ui/TextField";
+import {
+  FontSize,
+  Spacing,
+} from "../constants/theme";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { supabase } from "../lib/supabase";
 
 export default function CreateProfileScreen() {
+  const { colors } = useTheme();
+
   const {
     session,
     refreshProfile,
@@ -111,31 +115,36 @@ export default function CreateProfileScreen() {
   }
 
   return (
-    <View
-      style={styles.container}
-    >
-      <View style={styles.card}>
-        <Text style={styles.title}>
-          Choose your name
-        </Text>
+    <ScreenContainer centered>
+      <Text
+        style={[
+          styles.title,
+          {
+            color:
+              colors.textPrimary,
+          },
+        ]}
+      >
+        Choose your name
+      </Text>
 
-        <Text
-          style={
-            styles.subtitle
-          }
-        >
-          This is how other people
-          will see you in GroupFinance.
-        </Text>
+      <Text
+        style={[
+          styles.subtitle,
+          {
+            color:
+              colors.textSecondary,
+          },
+        ]}
+      >
+        This is how other people
+        will see you in GroupFinance.
+      </Text>
 
-        <Text style={styles.label}>
-          Display name
-        </Text>
-
-        <TextInput
-          style={styles.input}
+      <Card>
+        <TextField
+          label="Display name"
           placeholder="John Doe"
-          placeholderTextColor="#9CA3AF"
           value={displayName}
           onChangeText={(value) => {
             setDisplayName(value);
@@ -144,129 +153,34 @@ export default function CreateProfileScreen() {
           maxLength={40}
           editable={!loading}
           autoCapitalize="words"
+          error={error}
         />
 
-        {error ? (
-          <Text
-            style={
-              styles.errorText
-            }
-          >
-            {error}
-          </Text>
-        ) : null}
-
-        <Pressable
-          style={[
-            styles.button,
-            (!displayName.trim() ||
-              loading) &&
-              styles.buttonDisabled,
-          ]}
-          onPress={
-            handleContinue
-          }
+        <Button
+          label="Continue"
+          onPress={handleContinue}
           disabled={
-            !displayName.trim() ||
-            loading
+            !displayName.trim()
           }
-        >
-          {loading ? (
-            <ActivityIndicator
-              color="white"
-            />
-          ) : (
-            <Text
-              style={
-                styles.buttonText
-              }
-            >
-              Continue
-            </Text>
-          )}
-        </Pressable>
-      </View>
-    </View>
+          loading={loading}
+        />
+      </Card>
+    </ScreenContainer>
   );
 }
 
-const styles =
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor:
-        "#F9FAFB",
-      alignItems: "center",
-      paddingHorizontal: 24,
-      paddingTop: 90,
-    },
+const styles = StyleSheet.create({
+  title: {
+    fontSize: FontSize.xxl,
+    fontWeight: "700",
+    textAlign: "center",
+  },
 
-    card: {
-      width: "100%",
-      maxWidth: 440,
-      backgroundColor: "white",
-      borderRadius: 20,
-      padding: 28,
-      borderWidth: 1,
-      borderColor: "#E5E7EB",
-    },
-
-    title: {
-      fontSize: 30,
-      fontWeight: "700",
-      color: "#111827",
-    },
-
-    subtitle: {
-      fontSize: 16,
-      color: "#6B7280",
-      lineHeight: 23,
-      marginTop: 8,
-      marginBottom: 28,
-    },
-
-    label: {
-      fontSize: 14,
-      fontWeight: "600",
-      color: "#374151",
-      marginBottom: 8,
-    },
-
-    input: {
-      borderWidth: 1,
-      borderColor: "#D1D5DB",
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 14,
-      fontSize: 16,
-      color: "#111827",
-      backgroundColor: "white",
-    },
-
-    errorText: {
-      fontSize: 14,
-      color: "#DC2626",
-      lineHeight: 20,
-      marginTop: 12,
-    },
-
-    button: {
-      backgroundColor: "#111827",
-      paddingVertical: 15,
-      borderRadius: 12,
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 50,
-      marginTop: 24,
-    },
-
-    buttonDisabled: {
-      opacity: 0.45,
-    },
-
-    buttonText: {
-      color: "white",
-      fontSize: 16,
-      fontWeight: "600",
-    },
-  });
+  subtitle: {
+    fontSize: FontSize.md,
+    lineHeight: 23,
+    textAlign: "center",
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
+});

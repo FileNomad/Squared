@@ -4,6 +4,8 @@ import {
   View,
 } from "react-native";
 
+import { useTheme } from "../context/ThemeContext";
+
 /*
  * Shown only for the brief window right after sign-in
  * where we know there's a session but haven't yet checked
@@ -14,10 +16,21 @@ import {
  * create-profile instead).
  */
 export default function LoadingScreen() {
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            colors.background,
+        },
+      ]}
+    >
       <ActivityIndicator
         size="large"
+        color={colors.primary}
       />
     </View>
   );

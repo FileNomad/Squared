@@ -8,16 +8,25 @@ import {
 } from "react";
 import {
   ActivityIndicator,
-  Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { ScreenContainer } from "../components/ui/ScreenContainer";
+import { TextField } from "../components/ui/TextField";
+import {
+  FontSize,
+  Spacing,
+} from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 import { supabase } from "../lib/supabase";
 
 export default function ResetPasswordScreen() {
+  const { colors } = useTheme();
+
   const { code } =
     useLocalSearchParams<{
       code?: string;
@@ -129,24 +138,40 @@ export default function ResetPasswordScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>
-          Set a new password
-        </Text>
+    <ScreenContainer centered>
+      <Text
+        style={[
+          styles.title,
+          {
+            color:
+              colors.textPrimary,
+          },
+        ]}
+      >
+        Set a new password
+      </Text>
 
+      <Card>
         {exchanging ? (
           <View
             style={
               styles.loadingRow
             }
           >
-            <ActivityIndicator />
+            <ActivityIndicator
+              color={
+                colors.primary
+              }
+            />
 
             <Text
-              style={
-                styles.loadingText
-              }
+              style={[
+                styles.loadingText,
+                {
+                  color:
+                    colors.textSecondary,
+                },
+              ]}
             >
               Verifying your reset
               link...
@@ -155,54 +180,45 @@ export default function ResetPasswordScreen() {
         ) : exchangeError ? (
           <>
             <Text
-              style={
-                styles.errorText
-              }
+              style={[
+                styles.errorText,
+                {
+                  color:
+                    colors.dangerText,
+                },
+              ]}
             >
               {exchangeError}
             </Text>
 
-            <Pressable
-              style={
-                styles.primaryButton
-              }
+            <Button
+              label="Request New Link"
               onPress={() =>
                 router.replace(
                   "/forgot-password"
                 )
               }
-            >
-              <Text
-                style={
-                  styles.primaryButtonText
-                }
-              >
-                Request New Link
-              </Text>
-            </Pressable>
+            />
           </>
         ) : sessionReady ? (
           <>
             <Text
-              style={
-                styles.subtitle
-              }
+              style={[
+                styles.subtitle,
+                {
+                  color:
+                    colors.textSecondary,
+                },
+              ]}
             >
               Choose a new password
               for your account.
             </Text>
 
-            <Text
-              style={styles.label}
-            >
-              New password
-            </Text>
-
-            <TextInput
-              style={styles.input}
+            <TextField
+              label="New password"
               placeholder="At least 6 characters"
-              placeholderTextColor="#9CA3AF"
-              secureTextEntry
+              secureToggle
               value={password}
               onChangeText={(
                 value
@@ -215,17 +231,10 @@ export default function ResetPasswordScreen() {
               editable={!saving}
             />
 
-            <Text
-              style={styles.label}
-            >
-              Confirm password
-            </Text>
-
-            <TextInput
-              style={styles.input}
+            <TextField
+              label="Confirm password"
               placeholder="Re-enter your new password"
-              placeholderTextColor="#9CA3AF"
-              secureTextEntry
+              secureToggle
               value={
                 confirmPassword
               }
@@ -237,142 +246,51 @@ export default function ResetPasswordScreen() {
                 );
                 setSaveError("");
               }}
+              error={saveError}
               editable={!saving}
             />
 
-            {saveError ? (
-              <Text
-                style={
-                  styles.errorText
-                }
-              >
-                {saveError}
-              </Text>
-            ) : null}
-
-            <Pressable
-              style={[
-                styles.primaryButton,
-                saving &&
-                  styles.buttonDisabled,
-              ]}
+            <Button
+              label="Update Password"
               onPress={
                 handleSetPassword
               }
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator
-                  color="white"
-                />
-              ) : (
-                <Text
-                  style={
-                    styles.primaryButtonText
-                  }
-                >
-                  Update Password
-                </Text>
-              )}
-            </Pressable>
+              loading={saving}
+            />
           </>
         ) : null}
-      </View>
-    </View>
+      </Card>
+    </ScreenContainer>
   );
 }
 
-const styles =
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor:
-        "#F9FAFB",
-      alignItems: "center",
-      paddingHorizontal: 24,
-      paddingTop: 90,
-    },
+const styles = StyleSheet.create({
+  title: {
+    fontSize: FontSize.xxl,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: Spacing.lg,
+  },
 
-    card: {
-      width: "100%",
-      maxWidth: 440,
-      backgroundColor: "white",
-      borderRadius: 20,
-      padding: 28,
-      borderWidth: 1,
-      borderColor: "#E5E7EB",
-    },
+  subtitle: {
+    fontSize: FontSize.base,
+    lineHeight: 22,
+    marginBottom: Spacing.lg,
+  },
 
-    title: {
-      fontSize: 28,
-      fontWeight: "700",
-      color: "#111827",
-      marginBottom: 8,
-    },
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
 
-    subtitle: {
-      fontSize: 15,
-      color: "#6B7280",
-      lineHeight: 22,
-      marginBottom: 24,
-    },
+  loadingText: {
+    fontSize: FontSize.base,
+  },
 
-    loadingRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-      marginTop: 16,
-    },
-
-    loadingText: {
-      fontSize: 15,
-      color: "#6B7280",
-    },
-
-    label: {
-      fontSize: 14,
-      fontWeight: "600",
-      color: "#374151",
-      marginBottom: 8,
-    },
-
-    input: {
-      borderWidth: 1,
-      borderColor: "#D1D5DB",
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 14,
-      fontSize: 16,
-      color: "#111827",
-      backgroundColor: "white",
-      marginBottom: 18,
-    },
-
-    errorText: {
-      fontSize: 14,
-      color: "#DC2626",
-      lineHeight: 20,
-      marginBottom: 14,
-      marginTop: 8,
-    },
-
-    primaryButton: {
-      backgroundColor: "#111827",
-      paddingVertical: 15,
-      borderRadius: 12,
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 50,
-      marginTop: 8,
-    },
-
-    buttonDisabled: {
-      opacity: 0.5,
-    },
-
-    primaryButtonText: {
-      color: "white",
-      fontSize: 16,
-      fontWeight: "600",
-    },
-  });
+  errorText: {
+    fontSize: FontSize.base,
+    lineHeight: 20,
+    marginBottom: Spacing.lg,
+  },
+});
