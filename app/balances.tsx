@@ -1,19 +1,28 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback } from "react";
 import {
   ActivityIndicator,
-  Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 
+import { Card } from "../components/ui/Card";
+import { ScreenContainer } from "../components/ui/ScreenContainer";
+import {
+  FontSize,
+  Radius,
+  Spacing,
+} from "../constants/theme";
 import { useAuth } from "../context/AuthContext";
 import { useEvents } from "../context/EventContext";
+import { useTheme } from "../context/ThemeContext";
 import { calculatePersonalBalances } from "../lib/balances";
 
 export default function BalancesScreen() {
+  const { colors } = useTheme();
+
   const { session } = useAuth();
 
   const {
@@ -114,336 +123,381 @@ export default function BalancesScreen() {
     ).toFixed(2);
   }
 
-  return (
-    <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={
-          styles.content
-        }
+  function initials(name: string) {
+    return name
+      .trim()
+      .charAt(0)
+      .toUpperCase();
+  }
+
+  function BalanceRow({
+    id,
+    amount,
+    positive,
+  }: {
+    id: string;
+    amount: number;
+    positive: boolean;
+  }) {
+    const name = getName(id);
+
+    return (
+      <View
+        style={[
+          styles.balanceRow,
+          {
+            backgroundColor:
+              colors.surface,
+            borderColor:
+              colors.border,
+          },
+        ]}
       >
         <View
-          style={styles.headerRow}
+          style={
+            styles.balanceLeft
+          }
         >
-          <Text style={styles.title}>
-            Balances
-          </Text>
-
-          <Pressable
-            style={
-              styles.refreshButton
-            }
-            onPress={
-              handleRefresh
-            }
-            disabled={refreshing}
+          <View
+            style={[
+              styles.avatar,
+              {
+                backgroundColor:
+                  colors.surfaceSubtle,
+              },
+            ]}
           >
             <Text
-              style={
-                styles.refreshButtonText
-              }
+              style={[
+                styles.avatarText,
+                {
+                  color:
+                    colors.textSecondary,
+                },
+              ]}
             >
-              {refreshing
-                ? "Refreshing..."
-                : "Refresh"}
+              {initials(name)}
             </Text>
-          </Pressable>
+          </View>
+
+          <Text
+            style={[
+              styles.balanceName,
+              {
+                color:
+                  colors.textPrimary,
+              },
+            ]}
+          >
+            {name}
+          </Text>
         </View>
 
         <Text
-          style={styles.subtitle}
+          style={[
+            styles.balanceAmount,
+            {
+              color: positive
+                ? colors.successText
+                : colors.dangerText,
+            },
+          ]}
         >
-          Across all of your events.
+          £{formatAmount(amount)}
         </Text>
+      </View>
+    );
+  }
 
-        {loading ? (
-          <View
-            style={
-              styles.loadingContainer
+  return (
+    <ScreenContainer
+      refreshing={refreshing}
+      onRefresh={handleRefresh}
+    >
+      <Text
+        style={[
+          styles.title,
+          {
+            color:
+              colors.textPrimary,
+          },
+        ]}
+      >
+        Balances
+      </Text>
+
+      <Text
+        style={[
+          styles.subtitle,
+          {
+            color:
+              colors.textSecondary,
+          },
+        ]}
+      >
+        Across all of your events.
+      </Text>
+
+      {loading ? (
+        <View
+          style={
+            styles.loadingContainer
+          }
+        >
+          <ActivityIndicator
+            color={colors.primary}
+          />
+        </View>
+      ) : (
+        <>
+          <Card
+            variant={
+              totalNet === 0
+                ? "default"
+                : totalNet > 0
+                  ? "success"
+                  : "danger"
             }
           >
-            <ActivityIndicator />
-          </View>
-        ) : (
-          <>
-            <View
-              style={
-                styles.summaryCard
+            {totalNet === 0 ? (
+              <Text
+                style={[
+                  styles.summaryText,
+                  {
+                    color:
+                      colors.textPrimary,
+                  },
+                ]}
+              >
+                You&apos;re all
+                settled up overall.
+              </Text>
+            ) : (
+              <Text
+                style={[
+                  styles.summaryText,
+                  {
+                    color:
+                      colors.textPrimary,
+                  },
+                ]}
+              >
+                Overall, you{" "}
+                {totalNet > 0
+                  ? "are owed"
+                  : "owe"}
+                {"\n"}
+                <Text
+                  style={[
+                    styles.summaryAmount,
+                    {
+                      color:
+                        totalNet > 0
+                          ? colors.successText
+                          : colors.dangerText,
+                    },
+                  ]}
+                >
+                  £
+                  {formatAmount(
+                    totalNet
+                  )}
+                </Text>
+              </Text>
+            )}
+          </Card>
+
+          <View
+            style={
+              styles.sectionRow
+            }
+          >
+            <Ionicons
+              name="arrow-down-circle-outline"
+              size={18}
+              color={
+                colors.successText
               }
-            >
-              {totalNet === 0 ? (
-                <Text
-                  style={
-                    styles.summaryText
-                  }
-                >
-                  You&apos;re all
-                  settled up overall.
-                </Text>
-              ) : totalNet > 0 ? (
-                <Text
-                  style={
-                    styles.summaryText
-                  }
-                >
-                  Overall, you&apos;re
-                  owed{" "}
-                  <Text
-                    style={
-                      styles.summaryAmountPositive
-                    }
-                  >
-                    £
-                    {formatAmount(
-                      totalNet
-                    )}
-                  </Text>
-                </Text>
-              ) : (
-                <Text
-                  style={
-                    styles.summaryText
-                  }
-                >
-                  Overall, you owe
-                  {" "}
-                  <Text
-                    style={
-                      styles.summaryAmountNegative
-                    }
-                  >
-                    £
-                    {formatAmount(
-                      totalNet
-                    )}
-                  </Text>
-                </Text>
-              )}
-            </View>
+            />
 
             <Text
-              style={
-                styles.sectionTitle
-              }
+              style={[
+                styles.sectionTitle,
+                {
+                  color:
+                    colors.textPrimary,
+                },
+              ]}
             >
               You&apos;re Owed
             </Text>
+          </View>
 
-            {owedToYou.length ===
-            0 ? (
-              <Text
-                style={
-                  styles.emptyText
-                }
-              >
-                Nobody owes you
-                anything right now.
-              </Text>
-            ) : (
-              owedToYou.map(
-                ([id, amount]) => (
-                  <View
-                    key={id}
-                    style={
-                      styles.balanceRow
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.balanceName
-                      }
-                    >
-                      {getName(id)}
-                    </Text>
-
-                    <Text
-                      style={
-                        styles.balanceAmountPositive
-                      }
-                    >
-                      £
-                      {formatAmount(
-                        amount
-                      )}
-                    </Text>
-                  </View>
-                )
+          {owedToYou.length ===
+          0 ? (
+            <Text
+              style={[
+                styles.emptyText,
+                {
+                  color:
+                    colors.textTertiary,
+                },
+              ]}
+            >
+              Nobody owes you
+              anything right now.
+            </Text>
+          ) : (
+            owedToYou.map(
+              ([id, amount]) => (
+                <BalanceRow
+                  key={id}
+                  id={id}
+                  amount={amount}
+                  positive
+                />
               )
-            )}
+            )
+          )}
+
+          <View
+            style={
+              styles.sectionRow
+            }
+          >
+            <Ionicons
+              name="arrow-up-circle-outline"
+              size={18}
+              color={
+                colors.dangerText
+              }
+            />
 
             <Text
-              style={
-                styles.sectionTitle
-              }
+              style={[
+                styles.sectionTitle,
+                {
+                  color:
+                    colors.textPrimary,
+                },
+              ]}
             >
               You Owe
             </Text>
+          </View>
 
-            {youOwe.length === 0 ? (
-              <Text
-                style={
-                  styles.emptyText
-                }
-              >
-                You don&apos;t owe
-                anyone right now.
-              </Text>
-            ) : (
-              youOwe.map(
-                ([id, amount]) => (
-                  <View
-                    key={id}
-                    style={
-                      styles.balanceRow
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.balanceName
-                      }
-                    >
-                      {getName(id)}
-                    </Text>
-
-                    <Text
-                      style={
-                        styles.balanceAmountNegative
-                      }
-                    >
-                      £
-                      {formatAmount(
-                        amount
-                      )}
-                    </Text>
-                  </View>
-                )
+          {youOwe.length === 0 ? (
+            <Text
+              style={[
+                styles.emptyText,
+                {
+                  color:
+                    colors.textTertiary,
+                },
+              ]}
+            >
+              You don&apos;t owe
+              anyone right now.
+            </Text>
+          ) : (
+            youOwe.map(
+              ([id, amount]) => (
+                <BalanceRow
+                  key={id}
+                  id={id}
+                  amount={amount}
+                  positive={false}
+                />
               )
-            )}
-          </>
-        )}
-      </ScrollView>
-    </View>
+            )
+          )}
+        </>
+      )}
+    </ScreenContainer>
   );
 }
 
-const styles =
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: "white",
-    },
+const styles = StyleSheet.create({
+  title: {
+    fontSize: FontSize.xxl,
+    fontWeight: "700",
+  },
 
-    content: {
-      paddingHorizontal: 24,
-      paddingTop: 32,
-      paddingBottom: 50,
-    },
+  subtitle: {
+    fontSize: FontSize.base,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
 
-    headerRow: {
-      flexDirection: "row",
-      justifyContent:
-        "space-between",
-      alignItems: "center",
-    },
+  loadingContainer: {
+    paddingVertical: Spacing.xxl,
+  },
 
-    title: {
-      fontSize: 30,
-      fontWeight: "700",
-      color: "#111827",
-    },
+  summaryText: {
+    fontSize: FontSize.md,
+    lineHeight: 24,
+  },
 
-    subtitle: {
-      fontSize: 15,
-      color: "#6B7280",
-      marginTop: 8,
-      marginBottom: 24,
-    },
+  summaryAmount: {
+    fontSize: FontSize.xl,
+    fontWeight: "700",
+  },
 
-    refreshButton: {
-      borderWidth: 1,
-      borderColor: "#D1D5DB",
-      borderRadius: 10,
-      paddingHorizontal: 13,
-      paddingVertical: 8,
-      backgroundColor: "#F9FAFB",
-    },
+  sectionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginTop: Spacing.xxl,
+    marginBottom: Spacing.md,
+  },
 
-    refreshButtonText: {
-      fontSize: 13,
-      fontWeight: "600",
-      color: "#374151",
-    },
+  sectionTitle: {
+    fontSize: FontSize.xl,
+    fontWeight: "700",
+  },
 
-    loadingContainer: {
-      paddingVertical: 40,
-    },
+  emptyText: {
+    fontSize: FontSize.base,
+  },
 
-    summaryCard: {
-      backgroundColor: "#F9FAFB",
-      borderWidth: 1,
-      borderColor: "#E5E7EB",
-      borderRadius: 14,
-      padding: 18,
-      marginBottom: 8,
-    },
+  balanceRow: {
+    flexDirection: "row",
+    justifyContent:
+      "space-between",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
 
-    summaryText: {
-      fontSize: 16,
-      color: "#374151",
-      lineHeight: 24,
-    },
+  balanceLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
 
-    summaryAmountPositive: {
-      fontWeight: "700",
-      color: "#059669",
-    },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.pill,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
-    summaryAmountNegative: {
-      fontWeight: "700",
-      color: "#DC2626",
-    },
+  avatarText: {
+    fontSize: FontSize.base,
+    fontWeight: "700",
+  },
 
-    sectionTitle: {
-      fontSize: 20,
-      fontWeight: "700",
-      color: "#111827",
-      marginTop: 28,
-      marginBottom: 12,
-    },
+  balanceName: {
+    fontSize: FontSize.md,
+    fontWeight: "500",
+  },
 
-    emptyText: {
-      fontSize: 15,
-      color: "#9CA3AF",
-    },
-
-    balanceRow: {
-      flexDirection: "row",
-      justifyContent:
-        "space-between",
-      alignItems: "center",
-      backgroundColor: "#F9FAFB",
-      borderWidth: 1,
-      borderColor: "#E5E7EB",
-      borderRadius: 12,
-      paddingHorizontal: 16,
-      paddingVertical: 14,
-      marginBottom: 8,
-    },
-
-    balanceName: {
-      fontSize: 16,
-      fontWeight: "500",
-      color: "#111827",
-    },
-
-    balanceAmountPositive: {
-      fontSize: 16,
-      fontWeight: "700",
-      color: "#059669",
-    },
-
-    balanceAmountNegative: {
-      fontSize: 16,
-      fontWeight: "700",
-      color: "#DC2626",
-    },
-  });
+  balanceAmount: {
+    fontSize: FontSize.md,
+    fontWeight: "700",
+  },
+});
