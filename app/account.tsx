@@ -1,24 +1,64 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 
 import {
-    FunctionsFetchError,
-    FunctionsHttpError,
-    FunctionsRelayError,
+  FunctionsFetchError,
+  FunctionsHttpError,
+  FunctionsRelayError,
 } from "@supabase/supabase-js";
 
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { ScreenContainer } from "../components/ui/ScreenContainer";
+import { TextField } from "../components/ui/TextField";
+import {
+  FontSize,
+  Radius,
+  Spacing,
+} from "../constants/theme";
 import { useAuth } from "../context/AuthContext";
+import {
+  ThemePreference,
+  useTheme,
+} from "../context/ThemeContext";
 import { supabase } from "../lib/supabase";
 
+const APPEARANCE_OPTIONS: {
+  value: ThemePreference;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  {
+    value: "system",
+    label: "System",
+    icon: "phone-portrait-outline",
+  },
+  {
+    value: "light",
+    label: "Light",
+    icon: "sunny-outline",
+  },
+  {
+    value: "dark",
+    label: "Dark",
+    icon: "moon-outline",
+  },
+];
+
 export default function AccountScreen() {
+  const {
+    colors,
+    preference,
+    setPreference,
+  } = useTheme();
+
   const {
     profile,
     refreshProfile,
@@ -255,486 +295,471 @@ export default function AccountScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>
-          Account
-        </Text>
+    <ScreenContainer>
+      <Text
+        style={[
+          styles.title,
+          {
+            color:
+              colors.textPrimary,
+          },
+        ]}
+      >
+        Account
+      </Text>
 
-        {!editingName ? (
-          <View
-            style={styles.nameRow}
-          >
-            <Text
-              style={
-                styles.displayName
-              }
-            >
+      {!editingName ? (
+        <View
+          style={styles.nameRow}
+        >
+          <Text
+            style={[
+              styles.displayName,
               {
-                profile?.display_name
-              }
-            </Text>
+                color:
+                  colors.textSecondary,
+              },
+            ]}
+          >
+            {profile?.display_name}
+          </Text>
 
-            <Pressable
-              onPress={
-                handleEditNamePress
-              }
-            >
-              <Text
-                style={
-                  styles.editNameLink
-                }
-              >
-                Edit
-              </Text>
-            </Pressable>
-          </View>
-        ) : (
-          <View
-            style={
-              styles.nameEditBox
+          <Pressable
+            onPress={
+              handleEditNamePress
             }
           >
             <Text
-              style={styles.label}
+              style={[
+                styles.editNameLink,
+                {
+                  color:
+                    colors.primary,
+                },
+              ]}
             >
-              Display name
+              Edit
             </Text>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Your name"
-              placeholderTextColor="#9CA3AF"
-              value={
-                displayNameInput
-              }
-              onChangeText={(
+          </Pressable>
+        </View>
+      ) : (
+        <View
+          style={
+            styles.nameEditBox
+          }
+        >
+          <TextField
+            label="Display name"
+            placeholder="Your name"
+            value={
+              displayNameInput
+            }
+            onChangeText={(
+              value
+            ) => {
+              setDisplayNameInput(
                 value
-              ) => {
-                setDisplayNameInput(
-                  value
-                );
-                setNameError("");
-              }}
-              maxLength={40}
-              autoCapitalize="words"
-              editable={
-                !savingName
-              }
-            />
+              );
+              setNameError("");
+            }}
+            maxLength={40}
+            autoCapitalize="words"
+            editable={
+              !savingName
+            }
+            error={nameError}
+          />
 
-            {nameError ? (
-              <Text
-                style={
-                  styles.errorText
-                }
-              >
-                {nameError}
-              </Text>
-            ) : null}
-
+          <View
+            style={
+              styles.nameEditActions
+            }
+          >
             <View
               style={
-                styles.nameEditActions
+                styles.actionButton
               }
             >
-              <Pressable
-                style={
-                  styles.cancelButton
-                }
+              <Button
+                label="Cancel"
+                variant="secondary"
                 onPress={
                   handleCancelEditName
                 }
                 disabled={
                   savingName
                 }
-              >
-                <Text
-                  style={
-                    styles.cancelButtonText
-                  }
-                >
-                  Cancel
-                </Text>
-              </Pressable>
+              />
+            </View>
 
-              <Pressable
-                style={[
-                  styles.saveNameButton,
-                  savingName &&
-                    styles.disabledButton,
-                ]}
+            <View
+              style={
+                styles.actionButton
+              }
+            >
+              <Button
+                label="Save"
                 onPress={
                   handleSaveName
                 }
-                disabled={
+                loading={
                   savingName
                 }
-              >
-                {savingName ? (
-                  <ActivityIndicator
-                    color="white"
-                  />
-                ) : (
-                  <Text
-                    style={
-                      styles.saveNameButtonText
-                    }
-                  >
-                    Save
-                  </Text>
-                )}
-              </Pressable>
+              />
             </View>
           </View>
-        )}
+        </View>
+      )}
 
-        <View
-          style={styles.dangerSection}
-        >
-          <Text
-            style={styles.dangerTitle}
-          >
-            Delete Account
-          </Text>
+      <Text
+        style={[
+          styles.sectionLabel,
+          {
+            color:
+              colors.textSecondary,
+          },
+        ]}
+      >
+        Appearance
+      </Text>
 
-          <Text
-            style={styles.description}
-          >
-            Permanently delete your
-            GroupFinance account and
-            remove your access to all
-            events.
-          </Text>
+      <View
+        style={[
+          styles.appearanceRow,
+          {
+            backgroundColor:
+              colors.surfaceSubtle,
+          },
+        ]}
+      >
+        {APPEARANCE_OPTIONS.map(
+          (option) => {
+            const active =
+              preference ===
+              option.value;
 
-          <Text
-            style={styles.warning}
-          >
-            Existing shared transaction
-            history may remain in an
-            anonymised form so other
-            members&apos; records are not
-            destroyed.
-          </Text>
-
-          <Text
-            style={styles.label}
-          >
-            Confirm your password
-          </Text>
-
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your password"
-            placeholderTextColor="#9CA3AF"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-            editable={!deleting}
-          />
-
-          {error ? (
-            <Text
-              style={styles.errorText}
-            >
-              {error}
-            </Text>
-          ) : null}
-
-          {!showConfirmation ? (
-            <Pressable
-              style={[
-                styles.deleteButton,
-                (!password ||
-                  deleting) &&
-                  styles.disabledButton,
-              ]}
-              onPress={
-                handleDeleteAccount
-              }
-              disabled={
-                !password ||
-                deleting
-              }
-            >
-              <Text
-                style={
-                  styles.deleteButtonText
+            return (
+              <Pressable
+                key={option.value}
+                style={[
+                  styles.appearanceOption,
+                  active && {
+                    backgroundColor:
+                      colors.surface,
+                  },
+                ]}
+                onPress={() =>
+                  setPreference(
+                    option.value
+                  )
                 }
               >
-                Delete My Account
-              </Text>
-            </Pressable>
-          ) : (
+                <Ionicons
+                  name={
+                    option.icon
+                  }
+                  size={16}
+                  color={
+                    active
+                      ? colors.primary
+                      : colors.textSecondary
+                  }
+                />
+
+                <Text
+                  style={[
+                    styles.appearanceLabel,
+                    {
+                      color: active
+                        ? colors.primary
+                        : colors.textSecondary,
+                    },
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            );
+          }
+        )}
+      </View>
+
+      <Card
+        variant="danger"
+        style={styles.dangerSection}
+      >
+        <Text
+          style={[
+            styles.dangerTitle,
+            {
+              color:
+                colors.dangerText,
+            },
+          ]}
+        >
+          Delete Account
+        </Text>
+
+        <Text
+          style={[
+            styles.description,
+            {
+              color:
+                colors.textPrimary,
+            },
+          ]}
+        >
+          Permanently delete your
+          GroupFinance account and
+          remove your access to all
+          events.
+        </Text>
+
+        <Text
+          style={[
+            styles.warning,
+            {
+              color:
+                colors.textSecondary,
+            },
+          ]}
+        >
+          Existing shared transaction
+          history may remain in an
+          anonymised form so other
+          members&apos; records are not
+          destroyed.
+        </Text>
+
+        <TextField
+          label="Confirm your password"
+          placeholder="Enter your password"
+          secureToggle
+          value={password}
+          onChangeText={setPassword}
+          editable={!deleting}
+        />
+
+        {error ? (
+          <Text
+            style={[
+              styles.errorText,
+              {
+                color:
+                  colors.dangerText,
+              },
+            ]}
+          >
+            {error}
+          </Text>
+        ) : null}
+
+        {!showConfirmation ? (
+          <Button
+            label="Delete My Account"
+            variant="danger"
+            onPress={
+              handleDeleteAccount
+            }
+            disabled={!password}
+          />
+        ) : (
+          <View
+            style={[
+              styles.confirmationBox,
+              {
+                backgroundColor:
+                  colors.surface,
+                borderColor:
+                  colors.dangerBorder,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.confirmationTitle,
+                {
+                  color:
+                    colors.dangerTextStrong,
+                },
+              ]}
+            >
+              Are you sure?
+            </Text>
+
+            <Text
+              style={[
+                styles.confirmationText,
+                {
+                  color:
+                    colors.textSecondary,
+                },
+              ]}
+            >
+              This permanently deletes
+              your GroupFinance account.
+              This action cannot be
+              undone.
+            </Text>
+
             <View
               style={
-                styles.confirmationBox
+                styles.confirmationActions
               }
             >
-              <Text
-                style={
-                  styles.confirmationTitle
-                }
-              >
-                Are you sure?
-              </Text>
-
-              <Text
-                style={
-                  styles.confirmationText
-                }
-              >
-                This permanently deletes
-                your GroupFinance account.
-                This action cannot be
-                undone.
-              </Text>
-
               <View
                 style={
-                  styles.confirmationActions
+                  styles.actionButton
                 }
               >
-                <Pressable
-                  style={
-                    styles.cancelButton
-                  }
+                <Button
+                  label="Cancel"
+                  variant="secondary"
                   onPress={
                     handleCancelDeletion
                   }
-                  disabled={deleting}
-                >
-                  <Text
-                    style={
-                      styles.cancelButtonText
-                    }
-                  >
-                    Cancel
-                  </Text>
-                </Pressable>
+                  disabled={
+                    deleting
+                  }
+                />
+              </View>
 
-                <Pressable
-                  style={[
-                    styles.confirmDeleteButton,
-                    deleting &&
-                      styles.disabledButton,
-                  ]}
+              <View
+                style={
+                  styles.actionButton
+                }
+              >
+                <Button
+                  label="Yes, Delete"
+                  variant="danger"
                   onPress={
                     performDeletion
                   }
-                  disabled={deleting}
-                >
-                  {deleting ? (
-                    <ActivityIndicator
-                      color="white"
-                    />
-                  ) : (
-                    <Text
-                      style={
-                        styles.confirmDeleteButtonText
-                      }
-                    >
-                      Yes, Delete Account
-                    </Text>
-                  )}
-                </Pressable>
+                  loading={deleting}
+                />
               </View>
             </View>
-          )}
-        </View>
-      </View>
-    </View>
+          </View>
+        )}
+      </Card>
+    </ScreenContainer>
   );
 }
 
-const styles =
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor:
-        "#F9FAFB",
-    },
+const styles = StyleSheet.create({
+  title: {
+    fontSize: FontSize.xxl,
+    fontWeight: "700",
+  },
 
-    content: {
-      padding: 24,
-    },
+  displayName: {
+    fontSize: FontSize.md,
+  },
 
-    title: {
-      fontSize: 30,
-      fontWeight: "700",
-      color: "#111827",
-    },
+  nameRow: {
+    flexDirection: "row",
+    justifyContent:
+      "space-between",
+    alignItems: "center",
+    marginTop: Spacing.sm,
+  },
 
-    displayName: {
-      fontSize: 16,
-      color: "#6B7280",
-    },
+  editNameLink: {
+    fontSize: FontSize.sm,
+    fontWeight: "600",
+  },
 
-    nameRow: {
-      flexDirection: "row",
-      justifyContent:
-        "space-between",
-      alignItems: "center",
-      marginTop: 8,
-    },
+  nameEditBox: {
+    marginTop: Spacing.lg,
+  },
 
-    editNameLink: {
-      fontSize: 14,
-      fontWeight: "600",
-      color: "#111827",
-    },
+  nameEditActions: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
 
-    nameEditBox: {
-      marginTop: 16,
-    },
+  actionButton: {
+    flex: 1,
+  },
 
-    nameEditActions: {
-      flexDirection: "row",
-      gap: 10,
-      marginTop: 14,
-    },
+  sectionLabel: {
+    fontSize: FontSize.sm,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginTop: Spacing.xxl,
+    marginBottom: Spacing.md,
+  },
 
-    saveNameButton: {
-      flex: 1,
-      backgroundColor: "#111827",
-      borderRadius: 10,
-      paddingVertical: 12,
-      alignItems: "center",
-      justifyContent: "center",
-    },
+  appearanceRow: {
+    flexDirection: "row",
+    borderRadius: Radius.lg,
+    padding: 4,
+    gap: 4,
+  },
 
-    saveNameButtonText: {
-      color: "white",
-      fontWeight: "600",
-    },
+  appearanceOption: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.md,
+  },
 
-    dangerSection: {
-      marginTop: 36,
-      backgroundColor: "white",
-      borderWidth: 1,
-      borderColor: "#FCA5A5",
-      borderRadius: 16,
-      padding: 20,
-    },
+  appearanceLabel: {
+    fontSize: FontSize.sm,
+    fontWeight: "600",
+  },
 
-    dangerTitle: {
-      fontSize: 20,
-      fontWeight: "700",
-      color: "#DC2626",
-    },
+  dangerSection: {
+    marginTop: Spacing.xxl,
+  },
 
-    description: {
-      fontSize: 15,
-      color: "#374151",
-      lineHeight: 22,
-      marginTop: 10,
-    },
+  dangerTitle: {
+    fontSize: FontSize.xl,
+    fontWeight: "700",
+  },
 
-    warning: {
-      fontSize: 14,
-      color: "#6B7280",
-      lineHeight: 20,
-      marginTop: 12,
-    },
+  description: {
+    fontSize: FontSize.base,
+    lineHeight: 22,
+    marginTop: Spacing.sm,
+  },
 
-    label: {
-      fontSize: 14,
-      fontWeight: "600",
-      color: "#374151",
-      marginTop: 24,
-      marginBottom: 8,
-    },
+  warning: {
+    fontSize: FontSize.sm,
+    lineHeight: 20,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
 
-    input: {
-      borderWidth: 1,
-      borderColor: "#D1D5DB",
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 14,
-      fontSize: 16,
-      color: "#111827",
-    },
+  errorText: {
+    fontSize: FontSize.sm,
+    marginBottom: Spacing.md,
+  },
 
-    errorText: {
-      color: "#DC2626",
-      fontSize: 14,
-      marginTop: 12,
-    },
+  confirmationBox: {
+    borderWidth: 1,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+  },
 
-    deleteButton: {
-      backgroundColor: "#DC2626",
-      borderRadius: 12,
-      paddingVertical: 15,
-      alignItems: "center",
-      marginTop: 20,
-      minHeight: 50,
-      justifyContent: "center",
-    },
+  confirmationTitle: {
+    fontSize: FontSize.lg,
+    fontWeight: "700",
+  },
 
-    deleteButtonText: {
-      color: "white",
-      fontSize: 16,
-      fontWeight: "600",
-    },
+  confirmationText: {
+    fontSize: FontSize.sm,
+    lineHeight: 20,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
 
-    disabledButton: {
-      opacity: 0.45,
-    },
-
-    confirmationBox: {
-      marginTop: 20,
-      borderWidth: 1,
-      borderColor: "#FCA5A5",
-      borderRadius: 12,
-      padding: 16,
-      backgroundColor: "#FEF2F2",
-    },
-
-    confirmationTitle: {
-      fontSize: 17,
-      fontWeight: "700",
-      color: "#991B1B",
-    },
-
-    confirmationText: {
-      fontSize: 14,
-      color: "#7F1D1D",
-      lineHeight: 20,
-      marginTop: 8,
-    },
-
-    confirmationActions: {
-      flexDirection: "row",
-      gap: 10,
-      marginTop: 16,
-    },
-
-    cancelButton: {
-      flex: 1,
-      borderWidth: 1,
-      borderColor: "#D1D5DB",
-      borderRadius: 10,
-      paddingVertical: 12,
-      alignItems: "center",
-      backgroundColor: "white",
-    },
-
-    cancelButtonText: {
-      color: "#374151",
-      fontWeight: "600",
-    },
-
-    confirmDeleteButton: {
-      flex: 1,
-      backgroundColor: "#DC2626",
-      borderRadius: 10,
-      paddingVertical: 12,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-
-    confirmDeleteButtonText: {
-      color: "white",
-      fontWeight: "600",
-    },
-  });
+  confirmationActions: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
+});
