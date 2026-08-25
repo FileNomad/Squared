@@ -1,61 +1,64 @@
-# Welcome to your Expo app 👋
+# GroupFinance
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A group expense tracker for splitting shared costs and settling debts with friends — think "who owes who" for a trip, a house share, or any recurring group expense. Built with React Native (Expo) and Supabase (Postgres, Auth, Edge Functions).
 
-## Get started
+Every debt goes through an explicit two-party confirmation workflow (propose → confirm/reject → mark paid → confirm/reject settlement) rather than just being written down — nothing is treated as real money owed until both people have agreed to it.
 
-1. Install dependencies
+## Features
 
-   ```bash
-   npm install
-   ```
+- **Auth**: email/password sign-up with email confirmation, forgot-password flow, account deletion (soft-deleted so shared history with other members survives).
+- **Events**: create a shared event, add registered members by display name, per-event and cross-event balance views.
+- **Transactions**: propose a debt, the other party confirms or rejects it, the debtor marks it paid, the creditor confirms or disputes receipt. Debtors can edit or cancel a transaction while it's still pending.
+- **Membership**: leave an event or (as the creator) remove a member — blocked while that person has an unresolved transaction in the event, so debts can't be dodged by disappearing.
+- **Dark mode**: system-following by default, with a manual light/dark/system override in Account.
 
-2. Start the app
+## Tech stack
 
-   ```bash
-   npx expo start
-   ```
+- **Client**: Expo / React Native, TypeScript, Expo Router (file-based navigation with guarded route groups)
+- **Backend**: Supabase — Postgres with Row Level Security, `security definer` RPC functions for every state-changing action, one Edge Function (account deletion, which independently re-verifies the caller's password server-side before doing anything)
+- **Testing**: Jest for client-side logic, pgTAP for database/RLS behaviour (see [supabase/README.md](supabase/README.md))
 
-In the output, you'll find options to open the app in a
+## Why the backend is worth a look
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+Nothing here trusts the client. Every table has Row Level Security enabled and every mutation goes through a Postgres function that re-derives authorization from `auth.uid()` rather than trusting anything the client sends — e.g. a transaction can only ever be inserted as `pending`, and only the creditor's own confirmation can move it to `confirmed`. The full schema, policies, and RPCs are version-controlled in [supabase/migrations](supabase/migrations), applied incrementally rather than as one dump, with each migration's commit explaining what it changed and why.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+The [pgTAP suite](supabase/tests/database/rls_security.test.sql) attacks the database directly — inserting a transaction as an unauthorized status, trying to confirm someone else's transaction, trying to delete someone else's event — and asserts each attempt correctly fails. It's run against a real local Postgres via Docker, not mocked.
+
+## Getting started
+
+```bash
+npm install
+npx expo start
+```
+
+Then open the result in [Expo Go](https://expo.dev/go), an iOS/Android simulator, or a web browser. You'll need your own Supabase project — copy `.env.example` to `.env` and fill in your project's URL and anon key, then apply the migrations in [supabase/migrations](supabase/migrations) (see [supabase/README.md](supabase/README.md) for exact steps).
 
 ## Testing
 
-Client-side unit tests (Jest):
+Client-side unit tests:
 
 ```bash
 npm test
 ```
 
-Database/RLS tests (pgTAP, needs Docker) - see
-[supabase/README.md](supabase/README.md#running-the-database-tests).
-
-## Get a fresh project
-
-When you're ready, run:
+Database/RLS tests (pgTAP, needs Docker Desktop):
 
 ```bash
-npm run reset-project
+npx supabase start
+npx supabase test db
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+See [supabase/README.md](supabase/README.md) for details on both the migrations and the test suite.
 
-## Learn more
+## Project structure
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```
+app/                   Screens (Expo Router file-based routing)
+components/ui/         Shared design-system primitives (Button, Card, TextField, ...)
+constants/theme.ts     Color tokens (light/dark), spacing, type scale
+context/                AuthContext, EventContext, ThemeContext
+lib/                    Pure business logic (balance calculations) + Supabase client setup
+supabase/migrations/   Version-controlled schema, RLS policies, RPC functions
+supabase/functions/    Edge Functions
+supabase/tests/         pgTAP database tests
+```
