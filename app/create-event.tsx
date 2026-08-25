@@ -1,21 +1,25 @@
-import {
-  router,
-} from "expo-router";
+import { router } from "expo-router";
 import { useState } from "react";
 import {
-  Pressable,
   StyleSheet,
   Text,
-  TextInput,
-  View,
 } from "react-native";
 
+import { Button } from "../components/ui/Button";
+import { ScreenContainer } from "../components/ui/ScreenContainer";
+import { TextField } from "../components/ui/TextField";
+import {
+  FontSize,
+  Spacing,
+} from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 import { useEvents } from "../context/EventContext";
 
 export default function CreateEventScreen() {
-  const {
-    createEvent,
-  } = useEvents();
+  const { colors } = useTheme();
+
+  const { createEvent } =
+    useEvents();
 
   const [name, setName] =
     useState("");
@@ -65,156 +69,99 @@ export default function CreateEventScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>
+    <ScreenContainer>
+      <Text
+        style={[
+          styles.title,
+          {
+            color:
+              colors.textPrimary,
+          },
+        ]}
+      >
         Create Event
       </Text>
 
-      <Text style={styles.label}>
-        Event name
-      </Text>
-
-      <TextInput
-        style={styles.nameInput}
+      <TextField
+        label="Event name"
         placeholder="e.g. Barcelona Holiday"
-        placeholderTextColor="#9CA3AF"
         value={name}
         onChangeText={setName}
       />
 
-      <Text style={styles.label}>
-        Description
-      </Text>
-
-      <TextInput
-        style={
-          styles.descriptionInput
-        }
+      <TextField
+        label="Description"
         placeholder="What's the event for?"
-        placeholderTextColor="#9CA3AF"
         value={description}
         onChangeText={
           setDescription
         }
         multiline
         maxLength={200}
+        style={
+          styles.descriptionInput
+        }
       />
 
       <Text
-        style={
-          styles.characterCount
-        }
+        style={[
+          styles.characterCount,
+          {
+            color:
+              colors.textTertiary,
+          },
+        ]}
       >
         {description.length}/200
       </Text>
 
       {error ? (
-        <Text style={styles.errorText}>
+        <Text
+          style={[
+            styles.errorText,
+            {
+              color:
+                colors.dangerText,
+            },
+          ]}
+        >
           {error}
         </Text>
       ) : null}
 
-      <Pressable
-        style={[
-          styles.createButton,
-          (!name.trim() ||
-            loading) &&
-            styles.createButtonDisabled,
-        ]}
+      <Button
+        label="Create Event"
         onPress={
           handleCreateEvent
         }
-        disabled={
-          !name.trim() || loading
-        }
-      >
-        <Text
-          style={
-            styles.createButtonText
-          }
-        >
-          {loading
-            ? "Creating..."
-            : "Create Event"}
-        </Text>
-      </Pressable>
-    </View>
+        disabled={!name.trim()}
+        loading={loading}
+      />
+    </ScreenContainer>
   );
 }
 
-const styles =
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: "white",
-      paddingHorizontal: 24,
-      paddingTop: 40,
-    },
+const styles = StyleSheet.create({
+  title: {
+    fontSize: FontSize.xxl,
+    fontWeight: "700",
+    marginBottom: Spacing.xl,
+  },
 
-    title: {
-      fontSize: 30,
-      fontWeight: "700",
-      color: "#111827",
-      marginBottom: 32,
-    },
+  descriptionInput: {
+    minHeight: 120,
+    textAlignVertical: "top",
+  },
 
-    label: {
-      fontSize: 15,
-      fontWeight: "600",
-      color: "#374151",
-      marginBottom: 8,
-      marginTop: 8,
-    },
+  characterCount: {
+    fontSize: FontSize.xs,
+    textAlign: "right",
+    marginTop: -Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
 
-    nameInput: {
-      borderWidth: 1,
-      borderColor: "#D1D5DB",
-      borderRadius: 12,
-      padding: 14,
-      fontSize: 16,
-      color: "#111827",
-      marginBottom: 16,
-    },
-
-    descriptionInput: {
-      minHeight: 120,
-      borderWidth: 1,
-      borderColor: "#D1D5DB",
-      borderRadius: 12,
-      padding: 14,
-      fontSize: 16,
-      color: "#111827",
-      textAlignVertical: "top",
-    },
-
-    characterCount: {
-      fontSize: 13,
-      color: "#9CA3AF",
-      textAlign: "right",
-      marginTop: 6,
-    },
-
-    errorText: {
-      color: "#DC2626",
-      fontSize: 14,
-      marginTop: 18,
-    },
-
-    createButton: {
-      backgroundColor: "#111827",
-      paddingVertical: 16,
-      borderRadius: 12,
-      alignItems: "center",
-      marginTop: 28,
-    },
-
-    createButtonDisabled: {
-      opacity: 0.4,
-    },
-
-    createButtonText: {
-      color: "white",
-      fontSize: 17,
-      fontWeight: "600",
-    },
-  });
+  errorText: {
+    fontSize: FontSize.sm,
+    marginBottom: Spacing.lg,
+  },
+});
