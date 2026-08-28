@@ -38,6 +38,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "88416fcb-d9d8-4b7a-9cef-38407f28eece"
+      }
+    },
+    "owner": "bennyblankss-team"
   }
 }
