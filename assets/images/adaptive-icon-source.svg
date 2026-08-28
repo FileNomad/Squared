@@ -1,0 +1,30 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(512 512) scale(0.62)">
+    <path
+      d="M -190 -70
+         L 190 -70
+         Q 220 -70 220 -40
+         L 220 130
+         Q 220 160 190 160
+         L -190 160
+         Q -220 160 -220 130
+         L -220 -40
+         Q -220 -70 -190 -70
+         Z"
+      fill="#FFFFFF"
+    />
+    <path
+      d="M -220 -20
+         L 130 -20
+         Q 160 -20 160 -50
+         L 160 -80
+         Q 160 -110 130 -110
+         L -140 -110
+         Q -220 -110 -220 -40
+         Z"
+      fill="#FFFFFF"
+      opacity="0.55"
+    />
+    <circle cx="130" cy="60" r="34" fill="#4F46E5"/>
+  </g>
+</svg>
