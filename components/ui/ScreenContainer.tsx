@@ -1,5 +1,7 @@
 import { ReactNode } from "react";
 import {
+  KeyboardAvoidingView,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -50,45 +52,58 @@ export function ScreenContainer({
       ]}
       edges={["top"]}
     >
-      {scroll ? (
-        <ScrollView
-          contentContainerStyle={[
-            styles.scrollContent,
-            centered &&
-              styles.centered,
-          ]}
-          keyboardShouldPersistTaps="handled"
-          refreshControl={
-            onRefresh ? (
-              <RefreshControl
-                refreshing={
-                  refreshing ??
-                  false
-                }
-                onRefresh={
-                  onRefresh
-                }
-                tintColor={
-                  colors.primary
-                }
-                colors={[
-                  colors.primary,
-                ]}
-              />
-            ) : undefined
-          }
-        >
-          {children}
-        </ScrollView>
-      ) : (
-        content
-      )}
+      <KeyboardAvoidingView
+        style={styles.flexFill}
+        behavior={
+          Platform.OS === "ios"
+            ? "padding"
+            : undefined
+        }
+      >
+        {scroll ? (
+          <ScrollView
+            contentContainerStyle={[
+              styles.scrollContent,
+              centered &&
+                styles.centered,
+            ]}
+            keyboardShouldPersistTaps="handled"
+            refreshControl={
+              onRefresh ? (
+                <RefreshControl
+                  refreshing={
+                    refreshing ??
+                    false
+                  }
+                  onRefresh={
+                    onRefresh
+                  }
+                  tintColor={
+                    colors.primary
+                  }
+                  colors={[
+                    colors.primary,
+                  ]}
+                />
+              ) : undefined
+            }
+          >
+            {children}
+          </ScrollView>
+        ) : (
+          content
+        )}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
+    flex: 1,
+  },
+
+  flexFill: {
     flex: 1,
   },
 
