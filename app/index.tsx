@@ -21,6 +21,7 @@ import {
 } from "../constants/theme";
 import { useAuth } from "../context/AuthContext";
 import { useEvents } from "../context/EventContext";
+import { useFriends } from "../context/FriendsContext";
 import { useTheme } from "../context/ThemeContext";
 import { supabase } from "../lib/supabase";
 
@@ -35,6 +36,9 @@ export default function HomeScreen() {
     refreshing,
     refreshEvents,
   } = useEvents();
+
+  const { incomingRequests } =
+    useFriends();
 
   useFocusEffect(
     useCallback(() => {
@@ -112,6 +116,46 @@ export default function HomeScreen() {
                 colors.textPrimary
               }
             />
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.iconButton,
+              {
+                backgroundColor:
+                  colors.surface,
+                borderColor:
+                  colors.border,
+              },
+            ]}
+            onPress={() =>
+              router.push(
+                "/friends"
+              )
+            }
+          >
+            <Ionicons
+              name="people-outline"
+              size={18}
+              color={
+                colors.textPrimary
+              }
+            />
+
+            {incomingRequests.length >
+            0 ? (
+              <View
+                style={[
+                  styles.badge,
+                  {
+                    backgroundColor:
+                      colors.dangerText,
+                    borderColor:
+                      colors.background,
+                  },
+                ]}
+              />
+            ) : null}
           </Pressable>
 
           <Pressable
@@ -383,6 +427,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  badge: {
+    position: "absolute",
+    top: 2,
+    right: 2,
+    width: 10,
+    height: 10,
+    borderRadius: Radius.pill,
+    borderWidth: 1.5,
   },
 
   welcomeText: {

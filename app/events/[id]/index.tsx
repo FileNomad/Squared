@@ -32,6 +32,7 @@ import {
   Transaction,
   useEvents,
 } from "../../../context/EventContext";
+import { useFriends } from "../../../context/FriendsContext";
 import { useTheme } from "../../../context/ThemeContext";
 import { calculatePairwiseBalances } from "../../../lib/balances";
 
@@ -54,6 +55,7 @@ export default function EventDetailsScreen() {
     refreshing,
     refreshEvents,
     addMember,
+    addMemberById,
     markTransactionPaid,
     forceResolveTransaction,
     cancelTransaction,
@@ -61,6 +63,8 @@ export default function EventDetailsScreen() {
     leaveEvent,
     removeMember,
   } = useEvents();
+
+  const { friends } = useFriends();
 
   const [
     memberName,
@@ -70,6 +74,18 @@ export default function EventDetailsScreen() {
   const [
     memberError,
     setMemberError,
+  ] = useState("");
+
+  const [
+    quickAddingId,
+    setQuickAddingId,
+  ] = useState<string | null>(
+    null
+  );
+
+  const [
+    quickAddError,
+    setQuickAddError,
   ] = useState("");
 
   const [
@@ -201,6 +217,29 @@ export default function EventDetailsScreen() {
     }
 
     setMemberName("");
+  }
+
+  async function handleQuickAdd(
+    userId: string
+  ) {
+    if (!event) {
+      return;
+    }
+
+    setQuickAddingId(userId);
+    setQuickAddError("");
+
+    const error =
+      await addMemberById(
+        event.id,
+        userId
+      );
+
+    setQuickAddingId(null);
+
+    if (error) {
+      setQuickAddError(error);
+    }
   }
 
   function handleDeleteEventPress() {
@@ -392,6 +431,20 @@ export default function EventDetailsScreen() {
   const isCreator =
     event.createdBy ===
     currentUserId;
+
+  const existingMemberIds = new Set(
+    event.members.map(
+      (member) => member.id
+    )
+  );
+
+  const friendsToAdd =
+    friends.filter(
+      (friend) =>
+        !existingMemberIds.has(
+          friend.id
+        )
+    );
 
   const activeTransactions =
     event.transactions.filter(
@@ -1097,6 +1150,95 @@ export default function EventDetailsScreen() {
           </Card>
         )
       )}
+
+      {isCreator &&
+      friendsToAdd.length > 0 ? (
+        <>
+          <Text
+            style={[
+              styles.quickAddLabel,
+              {
+                color:
+                  colors.textSecondary,
+              },
+            ]}
+          >
+            Quick Add from Friends
+          </Text>
+
+          {friendsToAdd.map(
+            (friend) => (
+              <Pressable
+                key={friend.id}
+                style={[
+                  styles.quickAddRow,
+                  {
+                    backgroundColor:
+                      colors.surface,
+                    borderColor:
+                      colors.border,
+                  },
+                ]}
+                onPress={() =>
+                  handleQuickAdd(
+                    friend.id
+                  )
+                }
+                disabled={
+                  quickAddingId !==
+                  null
+                }
+              >
+                <Text
+                  style={[
+                    styles.quickAddName,
+                    {
+                      color:
+                        colors.textPrimary,
+                    },
+                  ]}
+                >
+                  {
+                    friend.displayName
+                  }
+                </Text>
+
+                {quickAddingId ===
+                friend.id ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={
+                      colors.primary
+                    }
+                  />
+                ) : (
+                  <Ionicons
+                    name="add-circle-outline"
+                    size={20}
+                    color={
+                      colors.primary
+                    }
+                  />
+                )}
+              </Pressable>
+            )
+          )}
+
+          {quickAddError ? (
+            <Text
+              style={[
+                styles.errorText,
+                {
+                  color:
+                    colors.dangerText,
+                },
+              ]}
+            >
+              {quickAddError}
+            </Text>
+          ) : null}
+        </>
+      ) : null}
 
       {isCreator ? (
         <>
@@ -1830,6 +1972,32 @@ const styles = StyleSheet.create({
 
   actionButton: {
     flex: 1,
+  },
+
+  quickAddLabel: {
+    fontSize: FontSize.sm,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.sm,
+  },
+
+  quickAddRow: {
+    flexDirection: "row",
+    justifyContent:
+      "space-between",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+
+  quickAddName: {
+    fontSize: FontSize.md,
+    fontWeight: "500",
   },
 
   memberRow: {

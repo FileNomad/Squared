@@ -13,6 +13,7 @@ import { supabase } from "../lib/supabase";
 export type Profile = {
   id: string;
   display_name: string;
+  friend_code: string;
 };
 
 /*
@@ -66,7 +67,7 @@ export function AuthProvider({
       await supabase
         .from("profiles")
         .select(
-          "id, display_name"
+          "id, display_name, friend_code"
         )
         .eq(
           "id",

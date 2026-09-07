@@ -16,6 +16,7 @@ import {
   useAuth,
 } from "../context/AuthContext";
 import { EventProvider } from "../context/EventContext";
+import { FriendsProvider } from "../context/FriendsContext";
 import {
   ThemeProvider,
   useTheme,
@@ -162,6 +163,13 @@ function AppNavigator() {
           />
 
           <Stack.Screen
+            name="friends"
+            options={{
+              title: "Friends",
+            }}
+          />
+
+          <Stack.Screen
             name="create-event"
             options={{
               title:
@@ -229,7 +237,9 @@ export default function RootLayout() {
     <ThemeProvider>
       <AuthProvider>
         <EventProvider>
-          <AppNavigator />
+          <FriendsProvider>
+            <AppNavigator />
+          </FriendsProvider>
         </EventProvider>
       </AuthProvider>
     </ThemeProvider>

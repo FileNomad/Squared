@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import {
   Pressable,
+  Share,
   StyleSheet,
   Text,
   View,
@@ -294,6 +295,20 @@ export default function AccountScreen() {
     setShowConfirmation(false);
   }
 
+  async function handleShareCode() {
+    if (!profile) {
+      return;
+    }
+
+    try {
+      await Share.share({
+        message: `Add me on GroupFinance - my friend code is ${profile.friend_code}`,
+      });
+    } catch {
+      // User dismissed the share sheet - nothing to do.
+    }
+  }
+
   return (
     <ScreenContainer>
       <Text
@@ -410,6 +425,80 @@ export default function AccountScreen() {
           </View>
         </View>
       )}
+
+      <Text
+        style={[
+          styles.sectionLabel,
+          {
+            color:
+              colors.textSecondary,
+          },
+        ]}
+      >
+        Friend Code
+      </Text>
+
+      <Card>
+        <View
+          style={
+            styles.codeRow
+          }
+        >
+          <Text
+            style={[
+              styles.codeText,
+              {
+                color:
+                  colors.textPrimary,
+              },
+            ]}
+          >
+            {profile?.friend_code ??
+              "········"}
+          </Text>
+
+          <Pressable
+            style={[
+              styles.shareButton,
+              {
+                backgroundColor:
+                  colors.primary,
+              },
+            ]}
+            onPress={
+              handleShareCode
+            }
+          >
+            <Ionicons
+              name="share-outline"
+              size={16}
+              color={
+                colors.onPrimary
+              }
+            />
+          </Pressable>
+        </View>
+
+        <Pressable
+          onPress={() =>
+            router.push(
+              "/friends"
+            )
+          }
+        >
+          <Text
+            style={[
+              styles.manageFriendsLink,
+              {
+                color:
+                  colors.primary,
+              },
+            ]}
+          >
+            Manage Friends
+          </Text>
+        </Pressable>
+      </Card>
 
       <Text
         style={[
@@ -680,6 +769,33 @@ const styles = StyleSheet.create({
 
   actionButton: {
     flex: 1,
+  },
+
+  codeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent:
+      "space-between",
+    marginBottom: Spacing.md,
+  },
+
+  codeText: {
+    fontSize: FontSize.xl,
+    fontWeight: "700",
+    letterSpacing: 2,
+  },
+
+  shareButton: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.lg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  manageFriendsLink: {
+    fontSize: FontSize.sm,
+    fontWeight: "600",
   },
 
   sectionLabel: {

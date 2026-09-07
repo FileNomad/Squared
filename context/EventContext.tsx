@@ -62,6 +62,11 @@ type EventContextType = {
     displayName: string
   ) => Promise<string | null>;
 
+  addMemberById: (
+    eventId: string,
+    userId: string
+  ) => Promise<string | null>;
+
   createTransaction: (
     eventId: string,
     creditorId: string,
@@ -604,6 +609,28 @@ export function EventProvider({
     return null;
   }
 
+  async function addMemberById(
+    eventId: string,
+    userId: string
+  ) {
+    const { error } =
+      await supabase.rpc(
+        "add_event_member",
+        {
+          p_event_id: eventId,
+          p_user_id: userId,
+        }
+      );
+
+    if (error) {
+      return error.message;
+    }
+
+    await refreshEvents();
+
+    return null;
+  }
+
   async function createTransaction(
     eventId: string,
     creditorId: string,
@@ -843,6 +870,7 @@ export function EventProvider({
 
         createEvent,
         addMember,
+        addMemberById,
         createTransaction,
         editTransaction,
         cancelTransaction,

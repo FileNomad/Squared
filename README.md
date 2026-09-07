@@ -7,7 +7,8 @@ Debts are trust-based rather than gated by mutual confirmation: creating a trans
 ## Features
 
 - **Auth**: email/password sign-up with email confirmation, forgot-password flow, account deletion (soft-deleted so shared history with other members survives).
-- **Events**: create a shared event, add registered members by display name, per-event and cross-event balance views.
+- **Events**: create a shared event, add registered members by display name or by quick-adding a friend, per-event and cross-event balance views.
+- **Friends**: add someone unambiguously by their unique friend code (search finds them by exact code, shows who they are before you send anything, they accept or decline) rather than only by typing a display name and hoping it's spelled right.
 - **Transactions**: record a debt, the debtor marks it paid when settled. Debtors can edit or cancel a transaction any time before marking it paid.
 - **Membership**: leave an event or (as the creator) remove a member — blocked while that person has an unresolved transaction in the event, so debts can't be dodged by disappearing.
 - **Dark mode**: system-following by default, with a manual light/dark/system override in Account.
