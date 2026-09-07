@@ -5,6 +5,7 @@ import {
 } from "expo-router";
 import {
   useEffect,
+  useRef,
   useState,
 } from "react";
 import {
@@ -16,7 +17,10 @@ import {
 } from "react-native";
 
 import { Button } from "../../../components/ui/Button";
-import { ScreenContainer } from "../../../components/ui/ScreenContainer";
+import {
+  ScreenContainer,
+  useScrollIntoView,
+} from "../../../components/ui/ScreenContainer";
 import { TextField } from "../../../components/ui/TextField";
 import {
   FontSize,
@@ -29,6 +33,12 @@ import { useTheme } from "../../../context/ThemeContext";
 
 export default function AddTransactionScreen() {
   const { colors } = useTheme();
+
+  const scrollIntoView =
+    useScrollIntoView();
+
+  const amountInputRef =
+    useRef<TextInput>(null);
 
   const { id, transactionId } =
     useLocalSearchParams<{
@@ -347,6 +357,7 @@ export default function AddTransactionScreen() {
         </Text>
 
         <TextInput
+          ref={amountInputRef}
           style={[
             styles.amountInput,
             {
@@ -361,6 +372,11 @@ export default function AddTransactionScreen() {
           keyboardType="decimal-pad"
           value={amount}
           onChangeText={setAmount}
+          onFocus={() =>
+            scrollIntoView?.scrollToInput(
+              amountInputRef
+            )
+          }
         />
       </View>
 

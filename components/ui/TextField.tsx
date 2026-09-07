@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -15,6 +15,7 @@ import {
   Radius,
   Spacing,
 } from "../../constants/theme";
+import { useScrollIntoView } from "./ScreenContainer";
 
 type TextFieldProps = TextInputProps & {
   label?: string;
@@ -28,9 +29,16 @@ export function TextField({
   secureToggle = false,
   secureTextEntry,
   style,
+  onFocus,
   ...inputProps
 }: TextFieldProps) {
   const { colors } = useTheme();
+
+  const scrollIntoView =
+    useScrollIntoView();
+
+  const inputRef =
+    useRef<TextInput>(null);
 
   const [
     revealed,
@@ -75,6 +83,7 @@ export function TextField({
         ]}
       >
         <TextInput
+          ref={inputRef}
           style={[
             styles.input,
             {
@@ -89,6 +98,13 @@ export function TextField({
           secureTextEntry={
             isSecure
           }
+          onFocus={(event) => {
+            scrollIntoView?.scrollToInput(
+              inputRef
+            );
+
+            onFocus?.(event);
+          }}
           {...inputProps}
         />
 

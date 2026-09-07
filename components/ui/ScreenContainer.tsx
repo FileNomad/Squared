@@ -1,16 +1,47 @@
-import { ReactNode } from "react";
+import {
+  createContext,
+  ReactNode,
+  RefObject,
+  useContext,
+  useRef,
+} from "react";
 import {
   KeyboardAvoidingView,
   Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
+  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useTheme } from "../../context/ThemeContext";
 import { Spacing } from "../../constants/theme";
+
+type ScrollIntoViewContextValue = {
+  scrollToInput: (
+    inputRef: RefObject<TextInput | null>
+  ) => void;
+};
+
+const ScrollIntoViewContext =
+  createContext<ScrollIntoViewContextValue | null>(
+    null
+  );
+
+/**
+ * Lets a focused TextInput ask the nearest ScreenContainer's
+ * ScrollView to bring it above the keyboard. KeyboardAvoidingView
+ * alone only resizes the container - it doesn't scroll a
+ * specific field into view, so a field lower on a tall form
+ * still ends up hidden behind the keyboard without this.
+ */
+export function useScrollIntoView() {
+  return useContext(
+    ScrollIntoViewContext
+  );
+}
 
 type ScreenContainerProps = {
   children: ReactNode;
@@ -28,6 +59,45 @@ export function ScreenContainer({
   onRefresh,
 }: ScreenContainerProps) {
   const { colors } = useTheme();
+
+  const scrollViewRef =
+    useRef<ScrollView>(null);
+
+  function scrollToInput(
+    inputRef: RefObject<TextInput | null>
+  ) {
+    const scrollNode =
+      scrollViewRef.current;
+
+    if (
+      !scrollNode ||
+      !inputRef.current
+    ) {
+      return;
+    }
+
+    // Let the keyboard's show animation start first, so the
+    // ScrollView's visible area already reflects the space
+    // KeyboardAvoidingView is about to reclaim.
+    requestAnimationFrame(() => {
+      inputRef.current?.measureLayout(
+        scrollNode.getInnerViewNode(),
+        (
+          _x: number,
+          y: number
+        ) => {
+          scrollNode.scrollTo({
+            y: Math.max(
+              y - Spacing.xl,
+              0
+            ),
+            animated: true,
+          });
+        },
+        () => {}
+      );
+    });
+  }
 
   const content = (
     <View
@@ -60,39 +130,46 @@ export function ScreenContainer({
             : undefined
         }
       >
-        {scroll ? (
-          <ScrollView
-            contentContainerStyle={[
-              styles.scrollContent,
-              centered &&
-                styles.centered,
-            ]}
-            keyboardShouldPersistTaps="handled"
-            refreshControl={
-              onRefresh ? (
-                <RefreshControl
-                  refreshing={
-                    refreshing ??
-                    false
-                  }
-                  onRefresh={
-                    onRefresh
-                  }
-                  tintColor={
-                    colors.primary
-                  }
-                  colors={[
-                    colors.primary,
-                  ]}
-                />
-              ) : undefined
-            }
-          >
-            {children}
-          </ScrollView>
-        ) : (
-          content
-        )}
+        <ScrollIntoViewContext.Provider
+          value={{
+            scrollToInput,
+          }}
+        >
+          {scroll ? (
+            <ScrollView
+              ref={scrollViewRef}
+              contentContainerStyle={[
+                styles.scrollContent,
+                centered &&
+                  styles.centered,
+              ]}
+              keyboardShouldPersistTaps="handled"
+              refreshControl={
+                onRefresh ? (
+                  <RefreshControl
+                    refreshing={
+                      refreshing ??
+                      false
+                    }
+                    onRefresh={
+                      onRefresh
+                    }
+                    tintColor={
+                      colors.primary
+                    }
+                    colors={[
+                      colors.primary,
+                    ]}
+                  />
+                ) : undefined
+              }
+            >
+              {children}
+            </ScrollView>
+          ) : (
+            content
+          )}
+        </ScrollIntoViewContext.Provider>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
