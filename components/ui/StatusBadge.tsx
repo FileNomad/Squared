@@ -5,11 +5,8 @@ import { FontSize, Radius, Spacing } from "../../constants/theme";
 import { TransactionStatus } from "../../context/EventContext";
 
 const LABELS: Record<TransactionStatus, string> = {
-  pending: "Pending",
-  confirmed: "Confirmed",
-  payment_pending: "Payment Pending",
+  confirmed: "Outstanding",
   settled: "Settled",
-  rejected: "Rejected",
   cancelled: "Cancelled",
 };
 
@@ -24,30 +21,15 @@ export function StatusBadge({
     TransactionStatus,
     { bg: string; border: string; text: string }
   > = {
-    pending: {
-      bg: colors.warningBg,
-      border: colors.warningBorder,
-      text: colors.warningText,
-    },
     confirmed: {
       bg: colors.surfaceSubtle,
       border: colors.borderStrong,
       text: colors.textSecondary,
     },
-    payment_pending: {
-      bg: colors.warningBg,
-      border: colors.warningBorder,
-      text: colors.warningText,
-    },
     settled: {
       bg: colors.successBg,
       border: colors.successBorder,
       text: colors.successText,
-    },
-    rejected: {
-      bg: colors.dangerBg,
-      border: colors.dangerBorder,
-      text: colors.dangerText,
     },
     cancelled: {
       bg: colors.dangerBg,

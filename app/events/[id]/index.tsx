@@ -53,11 +53,7 @@ export default function EventDetailsScreen() {
     refreshing,
     refreshEvents,
     addMember,
-    confirmTransaction,
-    rejectTransaction,
     markTransactionPaid,
-    confirmSettlement,
-    rejectSettlement,
     forceResolveTransaction,
     cancelTransaction,
     deleteEvent,
@@ -386,20 +382,11 @@ export default function EventDetailsScreen() {
     event.createdBy ===
     currentUserId;
 
-  const pendingTransactions =
-    event.transactions.filter(
-      (transaction) =>
-        transaction.status ===
-        "pending"
-    );
-
   const activeTransactions =
     event.transactions.filter(
       (transaction) =>
         transaction.status ===
-          "confirmed" ||
-        transaction.status ===
-          "payment_pending"
+        "confirmed"
     );
 
   const settledTransactions =
@@ -413,9 +400,7 @@ export default function EventDetailsScreen() {
     event.transactions.filter(
       (transaction) =>
         transaction.status ===
-          "rejected" ||
-        transaction.status ===
-          "cancelled"
+        "cancelled"
     );
 
   function formatDate(
@@ -473,23 +458,9 @@ export default function EventDetailsScreen() {
   ) {
     if (
       transaction.status ===
-      "pending"
-    ) {
-      return transaction.creditorId;
-    }
-
-    if (
-      transaction.status ===
       "confirmed"
     ) {
       return transaction.debtorId;
-    }
-
-    if (
-      transaction.status ===
-      "payment_pending"
-    ) {
-      return transaction.creditorId;
     }
 
     return null;
@@ -994,10 +965,10 @@ export default function EventDetailsScreen() {
           },
         ]}
       >
-        Pending
+        Transactions
       </Text>
 
-      {pendingTransactions.length ===
+      {activeTransactions.length ===
       0 ? (
         <Text
           style={[
@@ -1008,10 +979,11 @@ export default function EventDetailsScreen() {
             },
           ]}
         >
-          No pending transactions.
+          No outstanding
+          transactions.
         </Text>
       ) : (
-        pendingTransactions.map(
+        activeTransactions.map(
           (transaction) => (
             <TransactionCardShell
               key={transaction.id}
@@ -1021,49 +993,7 @@ export default function EventDetailsScreen() {
               verb="owes"
             >
               {currentUserId ===
-              transaction.creditorId ? (
-                <View
-                  style={
-                    styles.actionRow
-                  }
-                >
-                  <View
-                    style={
-                      styles.actionButton
-                    }
-                  >
-                    <Button
-                      label="Confirm"
-                      icon="checkmark"
-                      onPress={() =>
-                        confirmTransaction(
-                          event.id,
-                          transaction.id
-                        )
-                      }
-                    />
-                  </View>
-
-                  <View
-                    style={
-                      styles.actionButton
-                    }
-                  >
-                    <Button
-                      label="Reject"
-                      variant="secondary"
-                      icon="close"
-                      onPress={() =>
-                        rejectTransaction(
-                          event.id,
-                          transaction.id
-                        )
-                      }
-                    />
-                  </View>
-                </View>
-              ) : currentUserId ===
-                transaction.debtorId ? (
+              transaction.debtorId ? (
                 cancelConfirmingId ===
                 transaction.id ? (
                   <View
@@ -1151,206 +1081,59 @@ export default function EventDetailsScreen() {
                     </View>
                   </View>
                 ) : (
-                  <View
-                    style={
-                      styles.actionRow
-                    }
-                  >
+                  <>
                     <View
                       style={
-                        styles.actionButton
+                        styles.actionRow
                       }
                     >
-                      <Button
-                        label="Edit"
-                        variant="secondary"
-                        icon="create-outline"
-                        onPress={() =>
-                          handleEditPress(
-                            transaction
-                          )
+                      <View
+                        style={
+                          styles.actionButton
                         }
-                      />
+                      >
+                        <Button
+                          label="Edit"
+                          variant="secondary"
+                          icon="create-outline"
+                          onPress={() =>
+                            handleEditPress(
+                              transaction
+                            )
+                          }
+                        />
+                      </View>
+
+                      <View
+                        style={
+                          styles.actionButton
+                        }
+                      >
+                        <Button
+                          label="Cancel"
+                          variant="secondary"
+                          icon="close"
+                          onPress={() =>
+                            handleCancelPress(
+                              transaction.id
+                            )
+                          }
+                        />
+                      </View>
                     </View>
 
-                    <View
-                      style={
-                        styles.actionButton
+                    <Button
+                      label="Mark as Paid"
+                      icon="cash-outline"
+                      onPress={() =>
+                        markTransactionPaid(
+                          event.id,
+                          transaction.id
+                        )
                       }
-                    >
-                      <Button
-                        label="Cancel"
-                        variant="secondary"
-                        icon="close"
-                        onPress={() =>
-                          handleCancelPress(
-                            transaction.id
-                          )
-                        }
-                      />
-                    </View>
-                  </View>
+                    />
+                  </>
                 )
-              ) : (
-                <Text
-                  style={[
-                    styles.statusText,
-                    {
-                      color:
-                        colors.textSecondary,
-                    },
-                  ]}
-                >
-                  Waiting for{" "}
-                  {
-                    transaction.creditorName
-                  }
-                </Text>
-              )}
-
-              {renderResolveIfStuck(
-                transaction
-              )}
-            </TransactionCardShell>
-          )
-        )
-      )}
-
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color:
-              colors.textPrimary,
-          },
-        ]}
-      >
-        Transactions
-      </Text>
-
-      {activeTransactions.length ===
-      0 ? (
-        <Text
-          style={[
-            styles.emptyText,
-            {
-              color:
-                colors.textTertiary,
-            },
-          ]}
-        >
-          No confirmed transactions
-          yet.
-        </Text>
-      ) : (
-        activeTransactions.map(
-          (transaction) => (
-            <TransactionCardShell
-              key={transaction.id}
-              transaction={
-                transaction
-              }
-              verb="owes"
-            >
-              {transaction.status ===
-                "confirmed" &&
-              currentUserId ===
-                transaction.debtorId ? (
-                <Button
-                  label="Mark as Paid"
-                  icon="cash-outline"
-                  onPress={() =>
-                    markTransactionPaid(
-                      event.id,
-                      transaction.id
-                    )
-                  }
-                />
-              ) : null}
-
-              {transaction.status ===
-                "payment_pending" &&
-              currentUserId ===
-                transaction.debtorId ? (
-                <Text
-                  style={[
-                    styles.statusText,
-                    {
-                      color:
-                        colors.textSecondary,
-                    },
-                  ]}
-                >
-                  Waiting for{" "}
-                  {
-                    transaction.creditorName
-                  }{" "}
-                  to confirm payment
-                </Text>
-              ) : null}
-
-              {transaction.status ===
-                "payment_pending" &&
-              currentUserId ===
-                transaction.creditorId ? (
-                <>
-                  <Text
-                    style={[
-                      styles.paymentNotice,
-                      {
-                        color:
-                          colors.textPrimary,
-                      },
-                    ]}
-                  >
-                    {
-                      transaction.debtorName
-                    }{" "}
-                    says this has been
-                    paid.
-                  </Text>
-
-                  <View
-                    style={
-                      styles.actionRow
-                    }
-                  >
-                    <View
-                      style={
-                        styles.actionButton
-                      }
-                    >
-                      <Button
-                        label="Confirm"
-                        icon="checkmark-done"
-                        onPress={() =>
-                          confirmSettlement(
-                            event.id,
-                            transaction.id
-                          )
-                        }
-                      />
-                    </View>
-
-                    <View
-                      style={
-                        styles.actionButton
-                      }
-                    >
-                      <Button
-                        label="Not Received"
-                        variant="secondary"
-                        icon="close"
-                        onPress={() =>
-                          rejectSettlement(
-                            event.id,
-                            transaction.id
-                          )
-                        }
-                      />
-                    </View>
-                  </View>
-                </>
               ) : null}
 
               {renderResolveIfStuck(
@@ -1518,10 +1301,7 @@ export default function EventDetailsScreen() {
                   },
                 ]}
               >
-                {transaction.status ===
-                "cancelled"
-                  ? `Cancelled by ${transaction.debtorName}`
-                  : `Rejected by ${transaction.creditorName}`}
+                {`Cancelled by ${transaction.debtorName}`}
               </Text>
             </TransactionCardShell>
           )

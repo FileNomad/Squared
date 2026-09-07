@@ -18,7 +18,11 @@
 -- across this session, not a general audit of every RPC:
 --   1. transactions could be inserted with any status,
 --      bypassing the confirm/reject workflow entirely
---      (fixed in 20260816120004).
+--      (fixed in 20260816120004). As of 20260828220000 that
+--      workflow no longer exists - a transaction must now be
+--      inserted directly as 'confirmed' rather than
+--      'pending', since nothing gates that transition
+--      anymore.
 --   2. profiles.is_deleted could be set by a normal user
 --      update, which force_resolve_stuck_transaction()
 --      trusted as proof an account was really gone (fixed
@@ -111,7 +115,7 @@ select add_event_member_by_name(:'event_id'::uuid, 'Bob');
 select add_event_member_by_name(:'event_id'::uuid, 'Carol');
 
 -- -----------------------------------------------------
--- 1. Transactions can only ever be inserted as 'pending' -
+-- 1. Transactions can only ever be inserted as 'confirmed' -
 --    this is the actual bug: any status was insertable.
 -- -----------------------------------------------------
 
@@ -142,13 +146,13 @@ select throws_ok(
       )
       values (
         %L::uuid, %L::uuid, %L::uuid,
-        1000, 'Should be rejected', 'confirmed'
+        1000, 'Should be rejected', 'cancelled'
       )
     $$,
     :'event_id', :'alice_id', :'bob_id'
   ),
   null,
-  'cannot insert a transaction pre-confirmed, skipping the creditor''s approval'
+  'cannot insert a transaction pre-cancelled'
 );
 
 select lives_ok(
@@ -160,12 +164,12 @@ select lives_ok(
       )
       values (
         %L::uuid, %L::uuid, %L::uuid,
-        1000, 'Legit pending transaction', 'pending'
+        1000, 'Legit confirmed transaction', 'confirmed'
       )
     $$,
     :'event_id', :'alice_id', :'bob_id'
   ),
-  'a normal pending transaction insert still works'
+  'a normal confirmed transaction insert works'
 );
 
 -- -----------------------------------------------------
@@ -181,7 +185,7 @@ select throws_ok(
       )
       values (
         %L::uuid, %L::uuid, %L::uuid,
-        500, 'Alice pretending to be Bob', 'pending'
+        500, 'Alice pretending to be Bob', 'confirmed'
       )
     $$,
     :'event_id', :'bob_id', :'carol_id'
@@ -247,7 +251,10 @@ select throws_ok(
 );
 
 -- -----------------------------------------------------
--- 5. Only the creditor can confirm a pending transaction.
+-- 5. Only the debtor can mark their own transaction as paid
+--    - there's no creditor confirmation step anymore, so
+--      this is the one remaining state transition and it
+--      must stay debtor-only.
 -- -----------------------------------------------------
 
 set local request.jwt.claim.sub = :'alice_id';
@@ -257,27 +264,29 @@ from public.transactions
 where event_id = :'event_id'::uuid
   and debtor_id = :'alice_id'::uuid
   and creditor_id = :'bob_id'::uuid
-  and status = 'pending'
+  and status = 'confirmed'
 limit 1
 \gset
 
+set local request.jwt.claim.sub = :'bob_id';
+
 select throws_ok(
   format(
-    $$ select confirm_transaction(%L::uuid, %L::uuid) $$,
+    $$ select mark_transaction_paid(%L::uuid, %L::uuid) $$,
     :'event_id', :'tx_id'
   ),
   null,
-  'the debtor cannot confirm their own transaction'
+  'the creditor cannot mark someone else''s debt as paid'
 );
 
-set local request.jwt.claim.sub = :'bob_id';
+set local request.jwt.claim.sub = :'alice_id';
 
 select lives_ok(
   format(
-    $$ select confirm_transaction(%L::uuid, %L::uuid) $$,
+    $$ select mark_transaction_paid(%L::uuid, %L::uuid) $$,
     :'event_id', :'tx_id'
   ),
-  'the actual creditor can confirm it'
+  'the actual debtor can mark it as paid'
 );
 
 -- -----------------------------------------------------
@@ -287,6 +296,8 @@ select lives_ok(
 --    the real assertion is "the row is still there
 --    afterward", not that the statement raises an error.
 -- -----------------------------------------------------
+
+set local request.jwt.claim.sub = :'bob_id';
 
 delete from public.events
 where id = :'event_id'::uuid;

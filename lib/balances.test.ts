@@ -23,27 +23,13 @@ function makeTransaction(
 }
 
 describe("isOutstanding", () => {
-  it("treats confirmed and payment_pending as outstanding", () => {
+  it("treats confirmed as outstanding", () => {
     expect(
       isOutstanding("confirmed")
-    ).toBe(true);
-
-    expect(
-      isOutstanding(
-        "payment_pending"
-      )
     ).toBe(true);
   });
 
   it("treats every other status as not outstanding", () => {
-    expect(
-      isOutstanding("pending")
-    ).toBe(false);
-
-    expect(
-      isOutstanding("rejected")
-    ).toBe(false);
-
     expect(
       isOutstanding("settled")
     ).toBe(false);
@@ -155,12 +141,6 @@ describe("calculatePairwiseBalances", () => {
   it("ignores transactions that aren't outstanding", () => {
     const result =
       calculatePairwiseBalances([
-        makeTransaction({
-          status: "pending",
-        }),
-        makeTransaction({
-          status: "rejected",
-        }),
         makeTransaction({
           status: "settled",
         }),
@@ -322,11 +302,6 @@ describe("calculatePersonalBalances", () => {
     const result =
       calculatePersonalBalances(
         [
-          makeTransaction({
-            status: "pending",
-            debtorId: "alice",
-            creditorId: "bob",
-          }),
           makeTransaction({
             status: "settled",
             debtorId: "alice",

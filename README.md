@@ -2,13 +2,13 @@
 
 A group expense tracker for splitting shared costs and settling debts with friends — think "who owes who" for a trip, a house share, or any recurring group expense. Built with React Native (Expo) and Supabase (Postgres, Auth, Edge Functions).
 
-Every debt goes through an explicit two-party confirmation workflow (propose → confirm/reject → mark paid → confirm/reject settlement) rather than just being written down — nothing is treated as real money owed until both people have agreed to it.
+Debts are trust-based rather than gated by mutual confirmation: creating a transaction records it as outstanding immediately, and the debtor marking it as paid settles it immediately — no separate approval step from the other party at either end. That matches how the app is actually used, among small groups of friends who trust each other's claims.
 
 ## Features
 
 - **Auth**: email/password sign-up with email confirmation, forgot-password flow, account deletion (soft-deleted so shared history with other members survives).
 - **Events**: create a shared event, add registered members by display name, per-event and cross-event balance views.
-- **Transactions**: propose a debt, the other party confirms or rejects it, the debtor marks it paid, the creditor confirms or disputes receipt. Debtors can edit or cancel a transaction while it's still pending.
+- **Transactions**: record a debt, the debtor marks it paid when settled. Debtors can edit or cancel a transaction any time before marking it paid.
 - **Membership**: leave an event or (as the creator) remove a member — blocked while that person has an unresolved transaction in the event, so debts can't be dodged by disappearing.
 - **Dark mode**: system-following by default, with a manual light/dark/system override in Account.
 
@@ -20,9 +20,9 @@ Every debt goes through an explicit two-party confirmation workflow (propose →
 
 ## Why the backend is worth a look
 
-Nothing here trusts the client. Every table has Row Level Security enabled and every mutation goes through a Postgres function that re-derives authorization from `auth.uid()` rather than trusting anything the client sends — e.g. a transaction can only ever be inserted as `pending`, and only the creditor's own confirmation can move it to `confirmed`. The full schema, policies, and RPCs are version-controlled in [supabase/migrations](supabase/migrations), applied incrementally rather than as one dump, with each migration's commit explaining what it changed and why.
+Nothing here trusts the client. Every table has Row Level Security enabled and every mutation goes through a Postgres function that re-derives authorization from `auth.uid()` rather than trusting anything the client sends — e.g. a transaction can only ever be inserted as `confirmed` by its actual debtor, and only that same debtor can ever mark it `settled`. The full schema, policies, and RPCs are version-controlled in [supabase/migrations](supabase/migrations), applied incrementally rather than as one dump, with each migration's commit explaining what it changed and why.
 
-The [pgTAP suite](supabase/tests/database/rls_security.test.sql) attacks the database directly — inserting a transaction as an unauthorized status, trying to confirm someone else's transaction, trying to delete someone else's event — and asserts each attempt correctly fails. It's run against a real local Postgres via Docker, not mocked.
+The [pgTAP suite](supabase/tests/database/rls_security.test.sql) attacks the database directly — inserting a transaction as an unauthorized status, trying to mark someone else's transaction as paid, trying to delete someone else's event — and asserts each attempt correctly fails. It's run against a real local Postgres via Docker, not mocked.
 
 ## Getting started
 

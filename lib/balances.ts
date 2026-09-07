@@ -4,7 +4,7 @@ import type {
 } from "../context/EventContext";
 
 const OUTSTANDING_STATUSES: TransactionStatus[] =
-  ["confirmed", "payment_pending"];
+  ["confirmed"];
 
 export function isOutstanding(
   status: TransactionStatus

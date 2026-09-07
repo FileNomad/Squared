@@ -13,10 +13,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthContext";
 
 export type TransactionStatus =
-  | "pending"
   | "confirmed"
-  | "rejected"
-  | "payment_pending"
   | "settled"
   | "cancelled";
 
@@ -85,27 +82,7 @@ type EventContextType = {
     transactionId: string
   ) => Promise<string | null>;
 
-  confirmTransaction: (
-    eventId: string,
-    transactionId: string
-  ) => Promise<void>;
-
-  rejectTransaction: (
-    eventId: string,
-    transactionId: string
-  ) => Promise<void>;
-
   markTransactionPaid: (
-    eventId: string,
-    transactionId: string
-  ) => Promise<void>;
-
-  confirmSettlement: (
-    eventId: string,
-    transactionId: string
-  ) => Promise<void>;
-
-  rejectSettlement: (
     eventId: string,
     transactionId: string
   ) => Promise<void>;
@@ -655,7 +632,7 @@ export function EventProvider({
           description:
             description.trim(),
 
-          status: "pending",
+          status: "confirmed",
         });
 
     if (error) {
@@ -676,7 +653,7 @@ export function EventProvider({
   ) {
     const { error } =
       await supabase.rpc(
-        "edit_pending_transaction",
+        "edit_transaction",
         {
           p_event_id: eventId,
 
@@ -732,56 +709,12 @@ export function EventProvider({
     await refreshEvents();
   }
 
-  async function confirmTransaction(
-    eventId: string,
-    transactionId: string
-  ) {
-    await runTransactionAction(
-      "confirm_transaction",
-      eventId,
-      transactionId
-    );
-  }
-
-  async function rejectTransaction(
-    eventId: string,
-    transactionId: string
-  ) {
-    await runTransactionAction(
-      "reject_transaction",
-      eventId,
-      transactionId
-    );
-  }
-
   async function markTransactionPaid(
     eventId: string,
     transactionId: string
   ) {
     await runTransactionAction(
       "mark_transaction_paid",
-      eventId,
-      transactionId
-    );
-  }
-
-  async function confirmSettlement(
-    eventId: string,
-    transactionId: string
-  ) {
-    await runTransactionAction(
-      "confirm_settlement",
-      eventId,
-      transactionId
-    );
-  }
-
-  async function rejectSettlement(
-    eventId: string,
-    transactionId: string
-  ) {
-    await runTransactionAction(
-      "reject_settlement",
       eventId,
       transactionId
     );
@@ -914,12 +847,7 @@ export function EventProvider({
         editTransaction,
         cancelTransaction,
 
-        confirmTransaction,
-        rejectTransaction,
-
         markTransactionPaid,
-        confirmSettlement,
-        rejectSettlement,
         forceResolveTransaction,
 
         deleteEvent,
