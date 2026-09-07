@@ -48,7 +48,7 @@
 
 begin;
 
-select plan(15);
+select plan(16);
 
 -- -----------------------------------------------------
 -- Fixtures: three real auth.users rows (required -
@@ -233,6 +233,29 @@ select is(
   ),
   'Alice Updated',
   'display_name change actually took effect'
+);
+
+-- create-profile.tsx calls .upsert(), which PostgREST turns
+-- into an ON CONFLICT DO UPDATE that includes the conflict
+-- column itself (id) in the SET clause - Postgres requires
+-- UPDATE privilege on every column named there, even for a
+-- no-op `id = excluded.id`. Missing this exact grant broke
+-- every new sign-up (20260907152000) and the two assertions
+-- above wouldn't have caught it, since they only ever
+-- exercise a plain UPDATE, never this upsert shape.
+select lives_ok(
+  format(
+    $$
+      insert into public.profiles (id, display_name)
+      values (%L::uuid, 'Alice Upserted')
+      on conflict (id)
+      do update set
+        id = excluded.id,
+        display_name = excluded.display_name
+    $$,
+    :'alice_id'
+  ),
+  'the exact upsert create-profile.tsx sends works'
 );
 
 -- -----------------------------------------------------
