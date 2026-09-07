@@ -10,7 +10,6 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import "react-native-reanimated";
 
 import {
   AuthProvider,
