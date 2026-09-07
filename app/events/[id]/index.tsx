@@ -145,6 +145,16 @@ export default function EventDetailsScreen() {
     setRemoveError,
   ] = useState("");
 
+  const [
+    transactionsExpanded,
+    setTransactionsExpanded,
+  ] = useState(false);
+
+  const [
+    settledExpanded,
+    setSettledExpanded,
+  ] = useState(false);
+
   useFocusEffect(
     useCallback(() => {
       refreshEvents();
@@ -558,6 +568,52 @@ export default function EventDetailsScreen() {
       ([, balance]) =>
         balance !== 0
     );
+
+  function CollapsibleSectionHeader({
+    title,
+    count,
+    expanded,
+    onToggle,
+  }: {
+    title: string;
+    count: number;
+    expanded: boolean;
+    onToggle: () => void;
+  }) {
+    return (
+      <Pressable
+        style={
+          styles.collapsibleHeader
+        }
+        onPress={onToggle}
+      >
+        <Text
+          style={[
+            styles.sectionTitle,
+            styles.collapsibleTitle,
+            {
+              color:
+                colors.textPrimary,
+            },
+          ]}
+        >
+          {title} ({count})
+        </Text>
+
+        <Ionicons
+          name={
+            expanded
+              ? "chevron-down"
+              : "chevron-forward"
+          }
+          size={20}
+          color={
+            colors.textSecondary
+          }
+        />
+      </Pressable>
+    );
+  }
 
   function TransactionCardShell({
     transaction,
@@ -1126,20 +1182,23 @@ export default function EventDetailsScreen() {
         </>
       ) : null}
 
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color:
-              colors.textPrimary,
-          },
-        ]}
-      >
-        Transactions
-      </Text>
+      <CollapsibleSectionHeader
+        title="Transactions"
+        count={
+          activeTransactions.length
+        }
+        expanded={
+          transactionsExpanded
+        }
+        onToggle={() =>
+          setTransactionsExpanded(
+            (current) => !current
+          )
+        }
+      />
 
-      {activeTransactions.length ===
-      0 ? (
+      {!transactionsExpanded ? null : activeTransactions.length ===
+        0 ? (
         <Text
           style={[
             styles.emptyText,
@@ -1314,20 +1373,21 @@ export default function EventDetailsScreen() {
         )
       )}
 
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color:
-              colors.textPrimary,
-          },
-        ]}
-      >
-        Settled
-      </Text>
+      <CollapsibleSectionHeader
+        title="Settled"
+        count={
+          settledTransactions.length
+        }
+        expanded={settledExpanded}
+        onToggle={() =>
+          setSettledExpanded(
+            (current) => !current
+          )
+        }
+      />
 
-      {settledTransactions.length ===
-      0 ? (
+      {!settledExpanded ? null : settledTransactions.length ===
+        0 ? (
         <Text
           style={[
             styles.emptyText,
@@ -1688,6 +1748,21 @@ const styles = StyleSheet.create({
 
   sectionTitleFirst: {
     marginTop: Spacing.md,
+  },
+
+  collapsibleHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent:
+      "space-between",
+    marginTop: Spacing.xxl,
+    marginBottom: Spacing.md,
+    paddingVertical: Spacing.xs,
+  },
+
+  collapsibleTitle: {
+    marginTop: 0,
+    marginBottom: 0,
   },
 
   emptyText: {
