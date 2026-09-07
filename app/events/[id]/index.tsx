@@ -690,6 +690,172 @@ export default function EventDetailsScreen() {
       <Text
         style={[
           styles.sectionTitle,
+          styles.sectionTitleFirst,
+          {
+            color:
+              colors.textPrimary,
+          },
+        ]}
+      >
+        Net Balance
+      </Text>
+
+      {outstandingBalances.length ===
+      0 ? (
+        <Text
+          style={[
+            styles.emptyText,
+            {
+              color:
+                colors.textTertiary,
+            },
+          ]}
+        >
+          No outstanding balance.
+        </Text>
+      ) : (
+        outstandingBalances.map(
+          ([pair, balance]) => {
+            const [
+              firstId,
+              secondId,
+            ] = pair.split("|");
+
+            const debtorId =
+              balance > 0
+                ? firstId
+                : secondId;
+
+            const creditorId =
+              balance > 0
+                ? secondId
+                : firstId;
+
+            const youAreDebtor =
+              debtorId ===
+              currentUserId;
+
+            const youAreCreditor =
+              creditorId ===
+              currentUserId;
+
+            const variant =
+              youAreCreditor
+                ? "success"
+                : youAreDebtor
+                ? "danger"
+                : "default";
+
+            const amountColor =
+              youAreCreditor
+                ? colors.successText
+                : youAreDebtor
+                ? colors.dangerText
+                : colors.textPrimary;
+
+            const icon = youAreCreditor
+              ? "arrow-down-circle"
+              : youAreDebtor
+              ? "arrow-up-circle"
+              : "swap-horizontal";
+
+            const label =
+              youAreCreditor
+                ? `${getMemberName(
+                    debtorId
+                  )} owes you`
+                : youAreDebtor
+                ? `You owe ${getMemberName(
+                    creditorId
+                  )}`
+                : `${getMemberName(
+                    debtorId
+                  )} owes ${getMemberName(
+                    creditorId
+                  )}`;
+
+            return (
+              <Card
+                key={pair}
+                variant={variant}
+                style={
+                  styles.balanceCard
+                }
+              >
+                <View
+                  style={
+                    styles.balanceCardRow
+                  }
+                >
+                  <Ionicons
+                    name={icon}
+                    size={20}
+                    color={
+                      amountColor
+                    }
+                  />
+
+                  <Text
+                    style={[
+                      styles.balanceLabel,
+                      {
+                        color:
+                          colors.textPrimary,
+                      },
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                </View>
+
+                <Text
+                  style={[
+                    styles.balanceAmount,
+                    {
+                      color:
+                        amountColor,
+                    },
+                  ]}
+                >
+                  £
+                  {(
+                    Math.abs(
+                      balance
+                    ) / 100
+                  ).toFixed(2)}
+                </Text>
+              </Card>
+            );
+          }
+        )
+      )}
+
+      {event.members.length >= 2 ? (
+        <View
+          style={
+            styles.addTransactionSpacing
+          }
+        >
+          <Button
+            label="Add Transaction"
+            icon="add"
+            onPress={() =>
+              router.push({
+                pathname:
+                  "/events/[id]/add-transaction",
+
+                params: {
+                  id: event.id,
+                },
+              })
+            }
+          />
+        </View>
+      ) : null}
+
+      <Text
+        style={[
+          styles.sectionTitle,
           {
             color:
               colors.textPrimary,
@@ -1153,79 +1319,6 @@ export default function EventDetailsScreen() {
           },
         ]}
       >
-        Net Balance
-      </Text>
-
-      {outstandingBalances.length ===
-      0 ? (
-        <Text
-          style={[
-            styles.emptyText,
-            {
-              color:
-                colors.textTertiary,
-            },
-          ]}
-        >
-          No outstanding balance.
-        </Text>
-      ) : (
-        outstandingBalances.map(
-          ([pair, balance]) => {
-            const [
-              firstId,
-              secondId,
-            ] = pair.split("|");
-
-            const debtorId =
-              balance > 0
-                ? firstId
-                : secondId;
-
-            const creditorId =
-              balance > 0
-                ? secondId
-                : firstId;
-
-            return (
-              <Text
-                key={pair}
-                style={[
-                  styles.balanceText,
-                  {
-                    color:
-                      colors.textPrimary,
-                  },
-                ]}
-              >
-                {getMemberName(
-                  debtorId
-                )}{" "}
-                owes{" "}
-                {getMemberName(
-                  creditorId
-                )}{" "}
-                £
-                {(
-                  Math.abs(
-                    balance
-                  ) / 100
-                ).toFixed(2)}
-              </Text>
-            );
-          }
-        )
-      )}
-
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color:
-              colors.textPrimary,
-          },
-        ]}
-      >
         Settled
       </Text>
 
@@ -1307,29 +1400,6 @@ export default function EventDetailsScreen() {
           )
         )
       )}
-
-      {event.members.length >= 2 ? (
-        <View
-          style={
-            styles.addTransactionSpacing
-          }
-        >
-          <Button
-            label="Add Transaction"
-            icon="add"
-            onPress={() =>
-              router.push({
-                pathname:
-                  "/events/[id]/add-transaction",
-
-                params: {
-                  id: event.id,
-                },
-              })
-            }
-          />
-        </View>
-      ) : null}
 
       {isCreator &&
       !showDeleteConfirmation ? (
@@ -1612,6 +1682,10 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
 
+  sectionTitleFirst: {
+    marginTop: Spacing.md,
+  },
+
   emptyText: {
     fontSize: FontSize.base,
   },
@@ -1775,14 +1849,31 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  balanceText: {
-    fontSize: FontSize.lg,
-    fontWeight: "700",
+  balanceCard: {
     marginBottom: Spacing.sm,
+  },
+
+  balanceCardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
+
+  balanceLabel: {
+    fontSize: FontSize.base,
+    fontWeight: "600",
+    flexShrink: 1,
+  },
+
+  balanceAmount: {
+    fontSize: FontSize.xl,
+    fontWeight: "700",
   },
 
   addTransactionSpacing: {
     marginTop: Spacing.xl,
+    marginBottom: Spacing.xl,
   },
 
   dangerButton: {
