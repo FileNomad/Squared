@@ -1,5 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRef, useState } from "react";
+import {
+  forwardRef,
+  useRef,
+  useState,
+} from "react";
 import {
   Pressable,
   StyleSheet,
@@ -23,22 +27,44 @@ type TextFieldProps = TextInputProps & {
   secureToggle?: boolean;
 };
 
-export function TextField({
-  label,
-  error,
-  secureToggle = false,
-  secureTextEntry,
-  style,
-  onFocus,
-  ...inputProps
-}: TextFieldProps) {
-  const { colors } = useTheme();
+export const TextField = forwardRef<
+  TextInput,
+  TextFieldProps
+>(function TextField(
+  {
+    label,
+    error,
+    secureToggle = false,
+    secureTextEntry,
+    style,
+    onFocus,
+    ...inputProps
+  },
+  forwardedRef
+) {
+  const { colors, colorScheme } =
+    useTheme();
 
   const scrollIntoView =
     useScrollIntoView();
 
   const inputRef =
     useRef<TextInput>(null);
+
+  function setRefs(
+    node: TextInput | null
+  ) {
+    inputRef.current = node;
+
+    if (
+      typeof forwardedRef ===
+      "function"
+    ) {
+      forwardedRef(node);
+    } else if (forwardedRef) {
+      forwardedRef.current = node;
+    }
+  }
 
   const [
     revealed,
@@ -83,7 +109,7 @@ export function TextField({
         ]}
       >
         <TextInput
-          ref={inputRef}
+          ref={setRefs}
           style={[
             styles.input,
             {
@@ -97,6 +123,9 @@ export function TextField({
           }
           secureTextEntry={
             isSecure
+          }
+          keyboardAppearance={
+            colorScheme
           }
           onFocus={(event) => {
             scrollIntoView?.scrollToInput(
@@ -150,7 +179,7 @@ export function TextField({
       ) : null}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

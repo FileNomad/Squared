@@ -36,7 +36,8 @@ import { useTheme } from "../../../context/ThemeContext";
 import { calculatePairwiseBalances } from "../../../lib/balances";
 
 export default function EventDetailsScreen() {
-  const { colors } = useTheme();
+  const { colors, colorScheme } =
+    useTheme();
 
   const { id } =
     useLocalSearchParams<{
@@ -1063,6 +1064,9 @@ export default function EventDetailsScreen() {
               placeholder="Registered user's display name"
               placeholderTextColor={
                 colors.textTertiary
+              }
+              keyboardAppearance={
+                colorScheme
               }
               value={memberName}
               onChangeText={

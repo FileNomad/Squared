@@ -32,12 +32,16 @@ import { useEvents } from "../../../context/EventContext";
 import { useTheme } from "../../../context/ThemeContext";
 
 export default function AddTransactionScreen() {
-  const { colors } = useTheme();
+  const { colors, colorScheme } =
+    useTheme();
 
   const scrollIntoView =
     useScrollIntoView();
 
   const amountInputRef =
+    useRef<TextInput>(null);
+
+  const descriptionInputRef =
     useRef<TextInput>(null);
 
   const { id, transactionId } =
@@ -199,7 +203,20 @@ export default function AddTransactionScreen() {
     !loading;
 
   return (
-    <ScreenContainer>
+    <ScreenContainer
+      footer={
+        <Button
+          label={
+            isEditing
+              ? "Save Changes"
+              : "Add Transaction"
+          }
+          onPress={handleSubmit}
+          disabled={!canSubmit}
+          loading={loading}
+        />
+      }
+    >
       <Text
         style={[
           styles.title,
@@ -370,6 +387,10 @@ export default function AddTransactionScreen() {
             colors.textTertiary
           }
           keyboardType="decimal-pad"
+          returnKeyType="next"
+          keyboardAppearance={
+            colorScheme
+          }
           value={amount}
           onChangeText={setAmount}
           onFocus={() =>
@@ -377,10 +398,14 @@ export default function AddTransactionScreen() {
               amountInputRef
             )
           }
+          onSubmitEditing={() =>
+            descriptionInputRef.current?.focus()
+          }
         />
       </View>
 
       <TextField
+        ref={descriptionInputRef}
         label="Description"
         placeholder="e.g. Taxi from airport"
         value={description}
@@ -388,6 +413,12 @@ export default function AddTransactionScreen() {
           setDescription
         }
         maxLength={100}
+        returnKeyType="done"
+        onSubmitEditing={() => {
+          if (canSubmit) {
+            handleSubmit();
+          }
+        }}
         style={
           styles.descriptionSpacing
         }
@@ -406,17 +437,6 @@ export default function AddTransactionScreen() {
           {error}
         </Text>
       ) : null}
-
-      <Button
-        label={
-          isEditing
-            ? "Save Changes"
-            : "Send for Confirmation"
-        }
-        onPress={handleSubmit}
-        disabled={!canSubmit}
-        loading={loading}
-      />
     </ScreenContainer>
   );
 }

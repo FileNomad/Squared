@@ -49,6 +49,14 @@ type ScreenContainerProps = {
   centered?: boolean;
   refreshing?: boolean;
   onRefresh?: () => void;
+  /**
+   * Rendered outside the ScrollView, pinned to the bottom of
+   * the keyboard-avoided area - use for a primary action
+   * button on a form so it's never left hidden behind the
+   * keyboard or scrolled out of view, regardless of which
+   * field is focused.
+   */
+  footer?: ReactNode;
 };
 
 export function ScreenContainer({
@@ -57,6 +65,7 @@ export function ScreenContainer({
   centered = false,
   refreshing,
   onRefresh,
+  footer,
 }: ScreenContainerProps) {
   const { colors } = useTheme();
 
@@ -138,6 +147,9 @@ export function ScreenContainer({
           {scroll ? (
             <ScrollView
               ref={scrollViewRef}
+              style={
+                styles.flexFill
+              }
               contentContainerStyle={[
                 styles.scrollContent,
                 centered &&
@@ -170,6 +182,22 @@ export function ScreenContainer({
             content
           )}
         </ScrollIntoViewContext.Provider>
+
+        {footer ? (
+          <View
+            style={[
+              styles.footer,
+              {
+                backgroundColor:
+                  colors.background,
+                borderTopColor:
+                  colors.border,
+              },
+            ]}
+          >
+            {footer}
+          </View>
+        ) : null}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -193,6 +221,11 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
     paddingBottom: Spacing.xxl * 2,
     flexGrow: 1,
+  },
+
+  footer: {
+    padding: Spacing.xl,
+    borderTopWidth: 1,
   },
 
   centered: {
