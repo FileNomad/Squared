@@ -4,6 +4,23 @@ A group expense tracker for splitting shared costs and settling debts with frien
 
 > **Status: private beta.** Squared. is a personal project currently being tested with a small group of friends via TestFlight (iOS) and a direct APK install (Android) — it is not published on the App Store or Google Play, and isn't intended for general public use in its current form. Expect rough edges; this repository exists primarily as a portfolio piece and a real-world testbed for the backend security work described below.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/home-light.png" width="200"/><br/>Home (light)</td>
+    <td align="center"><img src="docs/screenshots/home-dark.png" width="200"/><br/>Home (dark)</td>
+    <td align="center"><img src="docs/screenshots/event-detail.png" width="200"/><br/>Event detail</td>
+    <td align="center"><img src="docs/screenshots/add-transaction.png" width="200"/><br/>Add transaction</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/friends.png" width="200"/><br/>Friends</td>
+    <td align="center"><img src="docs/screenshots/balances.png" width="200"/><br/>Balances</td>
+    <td align="center"><img src="docs/screenshots/create-event.png" width="200"/><br/>Create event</td>
+    <td align="center"><img src="docs/screenshots/account.png" width="200"/><br/>Account</td>
+  </tr>
+</table>
+
 ## What makes it different
 
 - **Trust-based, not gate-based.** Most expense-splitting apps require the other party to confirm a debt is real, then confirm again once it's paid. Squared. skips both steps — recording a transaction makes it outstanding immediately, and the debtor marking it paid settles it immediately. That matches how it's actually used: a small group of friends who trust each other's word, not strangers who need a paper trail.
