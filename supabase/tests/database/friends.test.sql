@@ -12,7 +12,7 @@
 
 begin;
 
-select plan(18);
+select plan(19);
 
 -- -----------------------------------------------------
 -- Fixtures
@@ -333,6 +333,28 @@ select ok(
     'execute'
   ),
   'anon has no execute privilege on send_friend_request'
+);
+
+-- -----------------------------------------------------
+-- 10. authenticated must have the base table-level SELECT
+--     grant on friendships, not just the RLS policy. This is
+--     the check that would have caught the real bug that
+--     shipped: the RLS policy above was correct from day one,
+--     but the grant itself was missing, so every client read
+--     of this table failed with "permission denied for table
+--     friendships" even though the RPCs above all worked (they
+--     run as security definer and bypass grants). Note this
+--     check alone didn't catch it locally, since local
+--     Docker's default privileges happen to grant table access
+--     that the hosted project doesn't - same gap already known
+--     for function execute privileges. It's here so an
+--     accidental future revoke shows up here instead of only
+--     on a live device.
+-- -----------------------------------------------------
+
+select ok(
+  has_table_privilege('authenticated', 'public.friendships', 'select'),
+  'authenticated has the base select grant on friendships'
 );
 
 select * from finish();
