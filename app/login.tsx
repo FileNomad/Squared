@@ -146,7 +146,7 @@ export default function LoginScreen() {
           },
         ]}
       >
-        Group Finance
+        Squared.
       </Text>
 
       <Text

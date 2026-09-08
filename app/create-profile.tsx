@@ -138,7 +138,7 @@ export default function CreateProfileScreen() {
         ]}
       >
         This is how other people
-        will see you in GroupFinance.
+        will see you in Squared.
       </Text>
 
       <Card>

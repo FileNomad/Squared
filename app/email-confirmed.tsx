@@ -65,7 +65,7 @@ export default function EmailConfirmedScreen() {
             },
           ]}
         >
-          Your GroupFinance account has been
+          Your account has been
           successfully confirmed.
         </Text>
 
@@ -79,7 +79,7 @@ export default function EmailConfirmedScreen() {
           ]}
         >
           You can now sign in and start using
-          GroupFinance.
+          Squared.
         </Text>
 
         <View

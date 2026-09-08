@@ -72,7 +72,7 @@ export default function HomeScreen() {
               },
             ]}
           >
-            Group Finance
+            Squared.
           </Text>
 
           <Text

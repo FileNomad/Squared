@@ -302,7 +302,7 @@ export default function AccountScreen() {
 
     try {
       await Share.share({
-        message: `Add me on GroupFinance - my friend code is ${profile.friend_code}`,
+        message: `Add me on Squared. My friend code is ${profile.friend_code}`,
       });
     } catch {
       // User dismissed the share sheet - nothing to do.
@@ -599,9 +599,8 @@ export default function AccountScreen() {
           ]}
         >
           Permanently delete your
-          GroupFinance account and
-          remove your access to all
-          events.
+          account and remove your
+          access to all events.
         </Text>
 
         <Text
@@ -686,9 +685,8 @@ export default function AccountScreen() {
               ]}
             >
               This permanently deletes
-              your GroupFinance account.
-              This action cannot be
-              undone.
+              your account. This action
+              cannot be undone.
             </Text>
 
             <View
