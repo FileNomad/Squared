@@ -21,7 +21,7 @@
       "package": "com.benyellop.groupfinance",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#4F46E5"
+        "backgroundColor": "#1F5C3E"
       }
     },
     "web": {
@@ -35,7 +35,7 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 160,
           "resizeMode": "contain",
-          "backgroundColor": "#4F46E5"
+          "backgroundColor": "#1F5C3E"
         }
       ]
     ],
