@@ -18,6 +18,9 @@ function makeTransaction(
     description: "Test transaction",
     createdAt: "2026-01-01T00:00:00Z",
     status: "confirmed",
+    originalCurrency: null,
+    originalAmountInPence: null,
+    exchangeRate: null,
     ...overrides,
   };
 }

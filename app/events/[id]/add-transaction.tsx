@@ -17,6 +17,7 @@ import {
 } from "react-native";
 
 import { Button } from "../../../components/ui/Button";
+import { CurrencyPicker } from "../../../components/ui/CurrencyPicker";
 import {
   ScreenContainer,
   useScrollIntoView,
@@ -30,6 +31,11 @@ import {
 import { useAuth } from "../../../context/AuthContext";
 import { useEvents } from "../../../context/EventContext";
 import { useTheme } from "../../../context/ThemeContext";
+import {
+  fetchExchangeRate,
+  formatCurrencyFromPence,
+  getCurrencySymbol,
+} from "../../../lib/currency";
 
 export default function AddTransactionScreen() {
   const { colors, colorScheme } =
@@ -87,6 +93,34 @@ export default function AddTransactionScreen() {
   const [amount, setAmount] =
     useState("");
 
+  const [currency, setCurrency] =
+    useState("");
+
+  const [
+    previewAmountInPence,
+    setPreviewAmountInPence,
+  ] = useState<number | null>(
+    null
+  );
+
+  const [
+    previewLoading,
+    setPreviewLoading,
+  ] = useState(false);
+
+  const [
+    previewError,
+    setPreviewError,
+  ] = useState("");
+
+  const previewRequestIdRef =
+    useRef(0);
+
+  const previewTimerRef =
+    useRef<ReturnType<
+      typeof setTimeout
+    > | null>(null);
+
   const [
     description,
     setDescription,
@@ -104,19 +138,163 @@ export default function AddTransactionScreen() {
         editingTransaction.creditorId
       );
 
-      setAmount(
-        (
-          editingTransaction.amountInPence /
-          100
-        ).toFixed(2)
-      );
-
       setDescription(
         editingTransaction.description
       );
+
+      if (
+        editingTransaction.originalCurrency &&
+        editingTransaction.originalAmountInPence !=
+          null
+      ) {
+        setCurrency(
+          editingTransaction.originalCurrency
+        );
+
+        setAmount(
+          (
+            editingTransaction.originalAmountInPence /
+            100
+          ).toFixed(2)
+        );
+      } else {
+        setCurrency(
+          event?.primaryCurrency ??
+            "GBP"
+        );
+
+        setAmount(
+          (
+            editingTransaction.amountInPence /
+            100
+          ).toFixed(2)
+        );
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingTransaction?.id]);
+
+  useEffect(() => {
+    if (
+      !isEditing &&
+      event &&
+      !currency
+    ) {
+      setCurrency(
+        event.primaryCurrency
+      );
+    }
+  }, [isEditing, event, currency]);
+
+  useEffect(() => {
+    if (
+      !event ||
+      !currency ||
+      currency ===
+        event.primaryCurrency
+    ) {
+      setPreviewAmountInPence(
+        null
+      );
+      setPreviewError("");
+      setPreviewLoading(false);
+
+      return;
+    }
+
+    const numericAmount =
+      Number(amount);
+
+    if (
+      !amount ||
+      numericAmount <= 0
+    ) {
+      setPreviewAmountInPence(
+        null
+      );
+      setPreviewError("");
+      setPreviewLoading(false);
+
+      return;
+    }
+
+    if (previewTimerRef.current) {
+      clearTimeout(
+        previewTimerRef.current
+      );
+    }
+
+    const requestId =
+      ++previewRequestIdRef.current;
+
+    setPreviewLoading(true);
+    setPreviewError("");
+
+    previewTimerRef.current =
+      setTimeout(async () => {
+        try {
+          const rate =
+            await fetchExchangeRate(
+              currency,
+              event.primaryCurrency
+            );
+
+          if (
+            previewRequestIdRef.current !==
+            requestId
+          ) {
+            return;
+          }
+
+          setPreviewAmountInPence(
+            Math.round(
+              numericAmount *
+                rate *
+                100
+            )
+          );
+
+          setPreviewLoading(false);
+        } catch (
+          conversionError
+        ) {
+          if (
+            previewRequestIdRef.current !==
+            requestId
+          ) {
+            return;
+          }
+
+          setPreviewError(
+            conversionError instanceof
+              Error
+              ? conversionError.message
+              : "Could not fetch the exchange rate."
+          );
+
+          setPreviewAmountInPence(
+            null
+          );
+
+          setPreviewLoading(false);
+        }
+      }, 400);
+
+    return () => {
+      if (
+        previewTimerRef.current
+      ) {
+        clearTimeout(
+          previewTimerRef.current
+        );
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    amount,
+    currency,
+    event?.primaryCurrency,
+  ]);
 
   async function handleSubmit() {
     if (
@@ -146,17 +324,15 @@ export default function AddTransactionScreen() {
             event.id,
             transactionId,
             creditorId,
-            Math.round(
-              numericAmount * 100
-            ),
+            numericAmount,
+            currency,
             description.trim()
           )
         : await createTransaction(
             event.id,
             creditorId,
-            Math.round(
-              numericAmount * 100
-            ),
+            numericAmount,
+            currency,
             description.trim()
           );
 
@@ -200,7 +376,15 @@ export default function AddTransactionScreen() {
     creditorId !== "" &&
     Number(amount) > 0 &&
     description.trim() !== "" &&
-    !loading;
+    !loading &&
+    !previewLoading;
+
+  const quickCurrencies = Array.from(
+    new Set([
+      event.primaryCurrency,
+      ...event.additionalCurrencies,
+    ])
+  );
 
   return (
     <ScreenContainer
@@ -347,6 +531,56 @@ export default function AddTransactionScreen() {
           },
         ]}
       >
+        Converting
+      </Text>
+
+      <View
+        style={
+          styles.currencyPickerRow
+        }
+      >
+        <CurrencyPicker
+          label="From"
+          value={
+            currency ||
+            event.primaryCurrency
+          }
+          onChange={setCurrency}
+          quickCodes={
+            quickCurrencies
+          }
+        />
+
+        <Ionicons
+          name="arrow-forward"
+          size={18}
+          color={
+            colors.textTertiary
+          }
+          style={
+            styles.currencyArrow
+          }
+        />
+
+        <CurrencyPicker
+          label="To"
+          value={
+            event.primaryCurrency
+          }
+          disabled
+          helperText="This event's currency"
+        />
+      </View>
+
+      <Text
+        style={[
+          styles.label,
+          {
+            color:
+              colors.textSecondary,
+          },
+        ]}
+      >
         Amount
       </Text>
 
@@ -370,7 +604,9 @@ export default function AddTransactionScreen() {
             },
           ]}
         >
-          £
+          {getCurrencySymbol(
+            currency
+          )}
         </Text>
 
         <TextInput
@@ -403,6 +639,34 @@ export default function AddTransactionScreen() {
           }
         />
       </View>
+
+      {currency &&
+      currency !==
+        event.primaryCurrency ? (
+        <Text
+          style={[
+            styles.conversionPreview,
+            {
+              color:
+                colors.textSecondary,
+            },
+          ]}
+        >
+          {previewLoading
+            ? "Fetching exchange rate…"
+            : previewError
+              ? previewError
+              : previewAmountInPence !==
+                  null
+                ? `≈ ${formatCurrencyFromPence(
+                    previewAmountInPence,
+                    event.primaryCurrency
+                  )} in ${
+                    event.primaryCurrency
+                  }`
+                : `Enter an amount to see it in ${event.primaryCurrency}`}
+        </Text>
+      ) : null}
 
       <TextField
         ref={descriptionInputRef}
@@ -478,6 +742,17 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
   },
 
+  currencyPickerRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: Spacing.lg,
+  },
+
+  currencyArrow: {
+    marginTop: 34,
+    marginHorizontal: Spacing.sm,
+  },
+
   amountContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -485,6 +760,12 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     paddingHorizontal: Spacing.lg,
     marginTop: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+
+  conversionPreview: {
+    fontSize: FontSize.sm,
+    marginTop: -Spacing.md,
     marginBottom: Spacing.lg,
   },
 

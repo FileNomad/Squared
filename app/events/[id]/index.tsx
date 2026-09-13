@@ -35,6 +35,7 @@ import {
 import { useFriends } from "../../../context/FriendsContext";
 import { useTheme } from "../../../context/ThemeContext";
 import { calculatePairwiseBalances } from "../../../lib/balances";
+import { formatCurrencyFromPence } from "../../../lib/currency";
 
 export default function EventDetailsScreen() {
   const { colors, colorScheme } =
@@ -677,6 +678,10 @@ export default function EventDetailsScreen() {
     verb: string;
     children?: ReactNode;
   }) {
+    if (!event) {
+      return null;
+    }
+
     return (
       <Card
         style={
@@ -700,11 +705,10 @@ export default function EventDetailsScreen() {
             {transaction.debtorName}{" "}
             {verb}{" "}
             {transaction.creditorName}{" "}
-            £
-            {(
-              transaction.amountInPence /
-              100
-            ).toFixed(2)}
+            {formatCurrencyFromPence(
+              transaction.amountInPence,
+              event.primaryCurrency
+            )}
           </Text>
 
           <StatusBadge
@@ -739,6 +743,26 @@ export default function EventDetailsScreen() {
             transaction.createdAt
           )}
         </Text>
+
+        {transaction.originalCurrency &&
+        transaction.originalAmountInPence !=
+          null ? (
+          <Text
+            style={[
+              styles.originalAmountText,
+              {
+                color:
+                  colors.textTertiary,
+              },
+            ]}
+          >
+            Entered as{" "}
+            {formatCurrencyFromPence(
+              transaction.originalAmountInPence,
+              transaction.originalCurrency
+            )}
+          </Text>
+        ) : null}
 
         {children}
       </Card>
@@ -927,12 +951,12 @@ export default function EventDetailsScreen() {
                     },
                   ]}
                 >
-                  £
-                  {(
+                  {formatCurrencyFromPence(
                     Math.abs(
                       balance
-                    ) / 100
-                  ).toFixed(2)}
+                    ),
+                    event.primaryCurrency
+                  )}
                 </Text>
               </Card>
             );
@@ -2045,6 +2069,11 @@ const styles = StyleSheet.create({
   },
 
   transactionDate: {
+    fontSize: FontSize.xs,
+    marginTop: Spacing.xs,
+  },
+
+  originalAmountText: {
     fontSize: FontSize.xs,
     marginTop: Spacing.xs,
   },

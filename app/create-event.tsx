@@ -3,9 +3,11 @@ import { useState } from "react";
 import {
   StyleSheet,
   Text,
+  View,
 } from "react-native";
 
 import { Button } from "../components/ui/Button";
+import { Chip } from "../components/ui/Chip";
 import { ScreenContainer } from "../components/ui/ScreenContainer";
 import { TextField } from "../components/ui/TextField";
 import {
@@ -14,6 +16,7 @@ import {
 } from "../constants/theme";
 import { useTheme } from "../context/ThemeContext";
 import { useEvents } from "../context/EventContext";
+import { COMMON_CURRENCIES } from "../lib/currency";
 
 export default function CreateEventScreen() {
   const { colors } = useTheme();
@@ -29,11 +32,49 @@ export default function CreateEventScreen() {
     setDescription,
   ] = useState("");
 
+  const [
+    primaryCurrency,
+    setPrimaryCurrency,
+  ] = useState("GBP");
+
+  const [
+    additionalCurrencies,
+    setAdditionalCurrencies,
+  ] = useState<string[]>([]);
+
   const [loading, setLoading] =
     useState(false);
 
   const [error, setError] =
     useState("");
+
+  function handleSelectPrimary(
+    code: string
+  ) {
+    setPrimaryCurrency(code);
+
+    setAdditionalCurrencies(
+      (current) =>
+        current.filter(
+          (existing) =>
+            existing !== code
+        )
+    );
+  }
+
+  function handleToggleAdditional(
+    code: string
+  ) {
+    setAdditionalCurrencies(
+      (current) =>
+        current.includes(code)
+          ? current.filter(
+              (existing) =>
+                existing !== code
+            )
+          : [...current, code]
+    );
+  }
 
   async function handleCreateEvent() {
     if (!name.trim()) {
@@ -46,7 +87,9 @@ export default function CreateEventScreen() {
     const newEvent =
       await createEvent(
         name.trim(),
-        description.trim()
+        description.trim(),
+        primaryCurrency,
+        additionalCurrencies
       );
 
     setLoading(false);
@@ -115,6 +158,107 @@ export default function CreateEventScreen() {
         {description.length}/200
       </Text>
 
+      <Text
+        style={[
+          styles.label,
+          {
+            color:
+              colors.textSecondary,
+          },
+        ]}
+      >
+        Primary currency
+      </Text>
+
+      <Text
+        style={[
+          styles.hint,
+          {
+            color:
+              colors.textTertiary,
+          },
+        ]}
+      >
+        Every transaction converts
+        to this currency, and every
+        balance in this event is
+        shown in it. This can&apos;t
+        be changed later, so pick
+        whatever the group mostly
+        thinks in.
+      </Text>
+
+      <View style={styles.chipRow}>
+        {COMMON_CURRENCIES.map(
+          (currency) => (
+            <Chip
+              key={currency.code}
+              label={currency.code}
+              selected={
+                primaryCurrency ===
+                currency.code
+              }
+              onPress={() =>
+                handleSelectPrimary(
+                  currency.code
+                )
+              }
+            />
+          )
+        )}
+      </View>
+
+      <Text
+        style={[
+          styles.label,
+          styles.additionalLabel,
+          {
+            color:
+              colors.textSecondary,
+          },
+        ]}
+      >
+        Additional currencies
+        (optional)
+      </Text>
+
+      <Text
+        style={[
+          styles.hint,
+          {
+            color:
+              colors.textTertiary,
+          },
+        ]}
+      >
+        These show up as quick
+        options when adding a
+        transaction, useful for a
+        trip spanning more than one
+        country.
+      </Text>
+
+      <View style={styles.chipRow}>
+        {COMMON_CURRENCIES.filter(
+          (currency) =>
+            currency.code !==
+            primaryCurrency
+        ).map((currency) => (
+          <Chip
+            key={currency.code}
+            label={currency.code}
+            selected={additionalCurrencies.includes(
+              currency.code
+            )}
+            onPress={() =>
+              handleToggleAdditional(
+                currency.code
+              )
+            }
+          />
+        ))}
+      </View>
+
       {error ? (
         <Text
           style={[
@@ -157,6 +301,28 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     textAlign: "right",
     marginTop: -Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
+
+  label: {
+    fontSize: FontSize.base,
+    fontWeight: "600",
+    marginBottom: Spacing.sm,
+  },
+
+  additionalLabel: {
+    marginTop: Spacing.lg,
+  },
+
+  hint: {
+    fontSize: FontSize.sm,
+    marginBottom: Spacing.md,
+  },
+
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
     marginBottom: Spacing.xl,
   },
 

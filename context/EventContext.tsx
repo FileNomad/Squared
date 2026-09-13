@@ -9,6 +9,7 @@ import {
 } from "react";
 import { AppState } from "react-native";
 
+import { fetchExchangeRate } from "../lib/currency";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthContext";
 
@@ -32,6 +33,9 @@ export type Transaction = {
   description: string;
   createdAt: string;
   status: TransactionStatus;
+  originalCurrency: string | null;
+  originalAmountInPence: number | null;
+  exchangeRate: number | null;
 };
 
 export type Event = {
@@ -39,6 +43,8 @@ export type Event = {
   name: string;
   description: string;
   createdBy: string;
+  primaryCurrency: string;
+  additionalCurrencies: string[];
   members: Member[];
   transactions: Transaction[];
 };
@@ -54,7 +60,9 @@ type EventContextType = {
 
   createEvent: (
     name: string,
-    description: string
+    description: string,
+    primaryCurrency: string,
+    additionalCurrencies: string[]
   ) => Promise<Event | null>;
 
   addMember: (
@@ -70,7 +78,8 @@ type EventContextType = {
   createTransaction: (
     eventId: string,
     creditorId: string,
-    amountInPence: number,
+    amount: number,
+    currency: string,
     description: string
   ) => Promise<string | null>;
 
@@ -78,7 +87,8 @@ type EventContextType = {
     eventId: string,
     transactionId: string,
     creditorId: string,
-    amountInPence: number,
+    amount: number,
+    currency: string,
     description: string
   ) => Promise<string | null>;
 
@@ -156,7 +166,7 @@ export function EventProvider({
       } = await supabase
         .from("events")
         .select(
-          "id, name, description, created_by, created_at"
+          "id, name, description, created_by, created_at, primary_currency, additional_currencies"
         )
         .order("created_at", {
           ascending: false,
@@ -196,7 +206,10 @@ export function EventProvider({
                   amount_in_pence,
                   description,
                   created_at,
-                  status
+                  status,
+                  original_currency,
+                  original_amount_in_pence,
+                  exchange_rate
                   `
                 )
                 .eq(
@@ -318,6 +331,15 @@ export function EventProvider({
 
                 status:
                   transaction.status as TransactionStatus,
+
+                originalCurrency:
+                  transaction.original_currency,
+
+                originalAmountInPence:
+                  transaction.original_amount_in_pence,
+
+                exchangeRate:
+                  transaction.exchange_rate,
               }));
 
             const loadedEvent: Event = {
@@ -329,6 +351,13 @@ export function EventProvider({
 
               createdBy:
                 eventRow.created_by,
+
+              primaryCurrency:
+                eventRow.primary_currency,
+
+              additionalCurrencies:
+                eventRow.additional_currencies ??
+                [],
 
               members,
               transactions,
@@ -544,7 +573,9 @@ export function EventProvider({
 
   async function createEvent(
     name: string,
-    description: string
+    description: string,
+    primaryCurrency: string,
+    additionalCurrencies: string[]
   ) {
     const { data, error } =
       await supabase.rpc(
@@ -553,6 +584,10 @@ export function EventProvider({
           p_name: name.trim(),
           p_description:
             description.trim(),
+          p_primary_currency:
+            primaryCurrency,
+          p_additional_currencies:
+            additionalCurrencies,
         }
       );
 
@@ -579,6 +614,9 @@ export function EventProvider({
 
       createdBy:
         session?.user.id ?? "",
+
+      primaryCurrency,
+      additionalCurrencies,
 
       members: [],
       transactions: [],
@@ -634,11 +672,64 @@ export function EventProvider({
   async function createTransaction(
     eventId: string,
     creditorId: string,
-    amountInPence: number,
+    amount: number,
+    currency: string,
     description: string
   ) {
     if (!session) {
       return "You must be signed in.";
+    }
+
+    const event = events.find(
+      (item) => item.id === eventId
+    );
+
+    if (!event) {
+      return "Event not found.";
+    }
+
+    let amountInPence: number;
+    let originalCurrency: string | null =
+      null;
+    let originalAmountInPence:
+      | number
+      | null = null;
+    let exchangeRate: number | null =
+      null;
+
+    if (
+      currency ===
+      event.primaryCurrency
+    ) {
+      amountInPence = Math.round(
+        amount * 100
+      );
+    } else {
+      let rate: number;
+
+      try {
+        rate =
+          await fetchExchangeRate(
+            currency,
+            event.primaryCurrency
+          );
+      } catch (conversionError) {
+        return conversionError instanceof
+          Error
+          ? conversionError.message
+          : "Could not convert that currency.";
+      }
+
+      originalCurrency = currency;
+
+      originalAmountInPence =
+        Math.round(amount * 100);
+
+      exchangeRate = rate;
+
+      amountInPence = Math.round(
+        amount * rate * 100
+      );
     }
 
     const { error } =
@@ -660,6 +751,15 @@ export function EventProvider({
             description.trim(),
 
           status: "confirmed",
+
+          original_currency:
+            originalCurrency,
+
+          original_amount_in_pence:
+            originalAmountInPence,
+
+          exchange_rate:
+            exchangeRate,
         });
 
     if (error) {
@@ -675,9 +775,62 @@ export function EventProvider({
     eventId: string,
     transactionId: string,
     creditorId: string,
-    amountInPence: number,
+    amount: number,
+    currency: string,
     description: string
   ) {
+    const event = events.find(
+      (item) => item.id === eventId
+    );
+
+    if (!event) {
+      return "Event not found.";
+    }
+
+    let amountInPence: number;
+    let originalCurrency: string | null =
+      null;
+    let originalAmountInPence:
+      | number
+      | null = null;
+    let exchangeRate: number | null =
+      null;
+
+    if (
+      currency ===
+      event.primaryCurrency
+    ) {
+      amountInPence = Math.round(
+        amount * 100
+      );
+    } else {
+      let rate: number;
+
+      try {
+        rate =
+          await fetchExchangeRate(
+            currency,
+            event.primaryCurrency
+          );
+      } catch (conversionError) {
+        return conversionError instanceof
+          Error
+          ? conversionError.message
+          : "Could not convert that currency.";
+      }
+
+      originalCurrency = currency;
+
+      originalAmountInPence =
+        Math.round(amount * 100);
+
+      exchangeRate = rate;
+
+      amountInPence = Math.round(
+        amount * rate * 100
+      );
+    }
+
     const { error } =
       await supabase.rpc(
         "edit_transaction",
@@ -695,6 +848,15 @@ export function EventProvider({
 
           p_description:
             description.trim(),
+
+          p_original_currency:
+            originalCurrency,
+
+          p_original_amount_in_pence:
+            originalAmountInPence,
+
+          p_exchange_rate:
+            exchangeRate,
         }
       );
 
