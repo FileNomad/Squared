@@ -356,8 +356,8 @@ export default function ReceiptDetailScreen() {
           <Button
             label={
               unclaimedCount > 0
-                ? `Finalize (${unclaimedCount} unclaimed)`
-                : "Finalize"
+                ? `Finalise (${unclaimedCount} unclaimed)`
+                : "Finalise"
             }
             onPress={handleFinalize}
             disabled={
@@ -399,10 +399,13 @@ export default function ReceiptDetailScreen() {
         )}
         {" · "}
         {receipt.currency}
-        {receipt.status !==
-        "claiming"
-          ? ` · ${receipt.status}`
-          : ""}
+        {receipt.status ===
+        "finalized"
+          ? " · Finalised"
+          : receipt.status ===
+              "cancelled"
+            ? " · Cancelled"
+            : ""}
       </Text>
 
       {!isAttendee ? (

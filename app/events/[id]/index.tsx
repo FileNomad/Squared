@@ -1946,7 +1946,7 @@ export default function EventDetailsScreen() {
                         ? "Claiming"
                         : receipt.status ===
                             "finalized"
-                          ? "Finalized"
+                          ? "Finalised"
                           : "Cancelled"}
                     </Text>
                   </View>
