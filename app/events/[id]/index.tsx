@@ -12,6 +12,7 @@ import {
 import {
   ActivityIndicator,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -20,6 +21,7 @@ import {
 
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
+import { Chip } from "../../../components/ui/Chip";
 import { ScreenContainer } from "../../../components/ui/ScreenContainer";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
 import {
@@ -171,6 +173,13 @@ export default function EventDetailsScreen() {
     settledExpanded,
     setSettledExpanded,
   ] = useState(false);
+
+  const [
+    selectedPersonId,
+    setSelectedPersonId,
+  ] = useState<string>(
+    session?.user.id ?? "all"
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -447,26 +456,59 @@ export default function EventDetailsScreen() {
         )
     );
 
+  const isReadOnlyView =
+    selectedPersonId !== "all" &&
+    selectedPersonId !==
+      currentUserId;
+
+  const personFilteredTransactions =
+    selectedPersonId === "all"
+      ? event.transactions
+      : event.transactions.filter(
+          (transaction) =>
+            transaction.debtorId ===
+              selectedPersonId ||
+            transaction.creditorId ===
+              selectedPersonId
+        );
+
   const activeTransactions =
-    event.transactions.filter(
+    personFilteredTransactions.filter(
       (transaction) =>
         transaction.status ===
         "confirmed"
     );
 
   const settledTransactions =
-    event.transactions.filter(
+    personFilteredTransactions.filter(
       (transaction) =>
         transaction.status ===
         "settled"
     );
 
   const declinedTransactions =
-    event.transactions.filter(
+    personFilteredTransactions.filter(
       (transaction) =>
         transaction.status ===
         "cancelled"
     );
+
+  function handleSelectPerson(
+    personId: string
+  ) {
+    setSelectedPersonId(personId);
+  }
+
+  function handleBalanceCardPress(
+    debtorId: string,
+    creditorId: string
+  ) {
+    handleSelectPerson(
+      debtorId !== currentUserId
+        ? debtorId
+        : creditorId
+    );
+  }
 
   function formatDate(
     dateString: string
@@ -756,7 +798,7 @@ export default function EventDetailsScreen() {
               },
             ]}
           >
-            Entered as{" "}
+            Converted from{" "}
             {formatCurrencyFromPence(
               transaction.originalAmountInPence,
               transaction.originalCurrency
@@ -909,56 +951,65 @@ export default function EventDetailsScreen() {
                   )}`;
 
             return (
-              <Card
+              <Pressable
                 key={pair}
-                variant={variant}
-                style={
-                  styles.balanceCard
+                onPress={() =>
+                  handleBalanceCardPress(
+                    debtorId,
+                    creditorId
+                  )
                 }
               >
-                <View
+                <Card
+                  variant={variant}
                   style={
-                    styles.balanceCardRow
+                    styles.balanceCard
                   }
                 >
-                  <Ionicons
-                    name={icon}
-                    size={20}
-                    color={
-                      amountColor
+                  <View
+                    style={
+                      styles.balanceCardRow
                     }
-                  />
+                  >
+                    <Ionicons
+                      name={icon}
+                      size={20}
+                      color={
+                        amountColor
+                      }
+                    />
+
+                    <Text
+                      style={[
+                        styles.balanceLabel,
+                        {
+                          color:
+                            colors.textPrimary,
+                        },
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </View>
 
                   <Text
                     style={[
-                      styles.balanceLabel,
+                      styles.balanceAmount,
                       {
                         color:
-                          colors.textPrimary,
+                          amountColor,
                       },
                     ]}
                   >
-                    {label}
+                    {formatCurrencyFromPence(
+                      Math.abs(
+                        balance
+                      ),
+                      event.primaryCurrency
+                    )}
                   </Text>
-                </View>
-
-                <Text
-                  style={[
-                    styles.balanceAmount,
-                    {
-                      color:
-                        amountColor,
-                    },
-                  ]}
-                >
-                  {formatCurrencyFromPence(
-                    Math.abs(
-                      balance
-                    ),
-                    event.primaryCurrency
-                  )}
-                </Text>
-              </Card>
+                </Card>
+              </Pressable>
             );
           }
         )
@@ -1348,8 +1399,99 @@ export default function EventDetailsScreen() {
         </>
       ) : null}
 
+      <Text
+        style={[
+          styles.sectionTitle,
+          {
+            color:
+              colors.textPrimary,
+          },
+        ]}
+      >
+        Transactions
+      </Text>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={
+          false
+        }
+        style={styles.personChipRow}
+        contentContainerStyle={
+          styles.personChipRowContent
+        }
+      >
+        {event.members.map(
+          (member) => (
+            <Chip
+              key={member.id}
+              label={
+                member.id ===
+                currentUserId
+                  ? "You"
+                  : member.displayName
+              }
+              selected={
+                selectedPersonId ===
+                member.id
+              }
+              onPress={() =>
+                handleSelectPerson(
+                  member.id
+                )
+              }
+            />
+          )
+        )}
+
+        <Chip
+          label="Everyone"
+          selected={
+            selectedPersonId ===
+            "all"
+          }
+          onPress={() =>
+            handleSelectPerson("all")
+          }
+        />
+      </ScrollView>
+
+      {isReadOnlyView ? (
+        <View
+          style={[
+            styles.readOnlyNote,
+            {
+              backgroundColor:
+                colors.surfaceSubtle,
+            },
+          ]}
+        >
+          <Ionicons
+            name="lock-closed-outline"
+            size={14}
+            color={
+              colors.textSecondary
+            }
+          />
+
+          <Text
+            style={[
+              styles.readOnlyNoteText,
+              {
+                color:
+                  colors.textSecondary,
+              },
+            ]}
+          >
+            Read-only - you can only
+            manage your own
+            transactions
+          </Text>
+        </View>
+      ) : null}
+
       <CollapsibleSectionHeader
-        title="Transactions"
+        title="Outstanding"
         count={
           activeTransactions.length
         }
@@ -1387,8 +1529,9 @@ export default function EventDetailsScreen() {
               }
               verb="owes"
             >
-              {currentUserId ===
-              transaction.debtorId ? (
+              {!isReadOnlyView &&
+              currentUserId ===
+                transaction.debtorId ? (
                 cancelConfirmingId ===
                 transaction.id ? (
                   <View
@@ -1531,9 +1674,11 @@ export default function EventDetailsScreen() {
                 )
               ) : null}
 
-              {renderResolveIfStuck(
-                transaction
-              )}
+              {!isReadOnlyView
+                ? renderResolveIfStuck(
+                    transaction
+                  )
+                : null}
             </TransactionCardShell>
           )
         )
@@ -1929,6 +2074,31 @@ const styles = StyleSheet.create({
   collapsibleTitle: {
     marginTop: 0,
     marginBottom: 0,
+  },
+
+  personChipRow: {
+    marginTop: Spacing.sm,
+  },
+
+  personChipRowContent: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    paddingRight: Spacing.md,
+  },
+
+  readOnlyNote: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+
+  readOnlyNoteText: {
+    fontSize: FontSize.xs,
+    flex: 1,
   },
 
   emptyText: {

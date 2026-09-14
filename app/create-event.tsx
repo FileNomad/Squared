@@ -179,13 +179,12 @@ export default function CreateEventScreen() {
           },
         ]}
       >
-        Every transaction converts
-        to this currency, and every
-        balance in this event is
-        shown in it. This can&apos;t
-        be changed later, so pick
-        whatever the group mostly
-        thinks in.
+        Enter the currency
+        you&apos;d like everything
+        converted to, usually
+        whatever you use back home.
+        This can&apos;t be changed
+        once the event is created.
       </Text>
 
       <View style={styles.chipRow}>
