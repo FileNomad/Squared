@@ -2,6 +2,7 @@ import type {
   Transaction,
   TransactionStatus,
 } from "../context/EventContext";
+import type { TransactionCategory } from "./categories";
 
 const OUTSTANDING_STATUSES: TransactionStatus[] =
   ["confirmed"];
@@ -131,4 +132,45 @@ export function calculatePersonalBalances(
   );
 
   return balances;
+}
+
+/**
+ * Total spend per category across the given transactions,
+ * for the event-wide "spending by category" breakdown.
+ * Cancelled transactions never happened, so they're
+ * excluded - everything else (outstanding and settled)
+ * counts as real spend regardless of who's paid it back
+ * yet. Only categories that actually appear are included,
+ * so a category nobody's used yet doesn't show up as a
+ * zero-value slice.
+ */
+export function calculateCategoryTotals(
+  transactions: Transaction[]
+): Partial<
+  Record<TransactionCategory, number>
+> {
+  const totals: Partial<
+    Record<TransactionCategory, number>
+  > = {};
+
+  transactions.forEach(
+    (transaction) => {
+      if (
+        transaction.status ===
+        "cancelled"
+      ) {
+        return;
+      }
+
+      totals[
+        transaction.category
+      ] =
+        (totals[
+          transaction.category
+        ] ?? 0) +
+        transaction.amountInPence;
+    }
+  );
+
+  return totals;
 }

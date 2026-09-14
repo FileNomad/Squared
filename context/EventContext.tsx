@@ -9,6 +9,7 @@ import {
 } from "react";
 import { AppState } from "react-native";
 
+import type { TransactionCategory } from "../lib/categories";
 import { fetchExchangeRate } from "../lib/currency";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthContext";
@@ -36,6 +37,8 @@ export type Transaction = {
   originalCurrency: string | null;
   originalAmountInPence: number | null;
   exchangeRate: number | null;
+  category: TransactionCategory;
+  categoryCustomLabel: string | null;
 };
 
 export type Event = {
@@ -80,7 +83,9 @@ type EventContextType = {
     creditorId: string,
     amount: number,
     currency: string,
-    description: string
+    description: string,
+    category: TransactionCategory,
+    categoryCustomLabel: string | null
   ) => Promise<string | null>;
 
   editTransaction: (
@@ -89,7 +94,9 @@ type EventContextType = {
     creditorId: string,
     amount: number,
     currency: string,
-    description: string
+    description: string,
+    category: TransactionCategory,
+    categoryCustomLabel: string | null
   ) => Promise<string | null>;
 
   cancelTransaction: (
@@ -209,7 +216,9 @@ export function EventProvider({
                   status,
                   original_currency,
                   original_amount_in_pence,
-                  exchange_rate
+                  exchange_rate,
+                  category,
+                  category_custom_label
                   `
                 )
                 .eq(
@@ -340,6 +349,12 @@ export function EventProvider({
 
                 exchangeRate:
                   transaction.exchange_rate,
+
+                category:
+                  transaction.category as TransactionCategory,
+
+                categoryCustomLabel:
+                  transaction.category_custom_label,
               }));
 
             const loadedEvent: Event = {
@@ -674,7 +689,9 @@ export function EventProvider({
     creditorId: string,
     amount: number,
     currency: string,
-    description: string
+    description: string,
+    category: TransactionCategory,
+    categoryCustomLabel: string | null
   ) {
     if (!session) {
       return "You must be signed in.";
@@ -760,6 +777,11 @@ export function EventProvider({
 
           exchange_rate:
             exchangeRate,
+
+          category,
+
+          category_custom_label:
+            categoryCustomLabel,
         });
 
     if (error) {
@@ -777,7 +799,9 @@ export function EventProvider({
     creditorId: string,
     amount: number,
     currency: string,
-    description: string
+    description: string,
+    category: TransactionCategory,
+    categoryCustomLabel: string | null
   ) {
     const event = events.find(
       (item) => item.id === eventId
@@ -848,6 +872,11 @@ export function EventProvider({
 
           p_description:
             description.trim(),
+
+          p_category: category,
+
+          p_category_custom_label:
+            categoryCustomLabel,
 
           p_original_currency:
             originalCurrency,

@@ -17,6 +17,7 @@ import {
 } from "react-native";
 
 import { Button } from "../../../components/ui/Button";
+import { Chip } from "../../../components/ui/Chip";
 import { CurrencyPicker } from "../../../components/ui/CurrencyPicker";
 import {
   ScreenContainer,
@@ -31,6 +32,10 @@ import {
 import { useAuth } from "../../../context/AuthContext";
 import { useEvents } from "../../../context/EventContext";
 import { useTheme } from "../../../context/ThemeContext";
+import {
+  TRANSACTION_CATEGORIES,
+  TransactionCategory,
+} from "../../../lib/categories";
 import {
   fetchExchangeRate,
   formatCurrencyFromPence,
@@ -126,6 +131,16 @@ export default function AddTransactionScreen() {
     setDescription,
   ] = useState("");
 
+  const [category, setCategory] =
+    useState<
+      TransactionCategory | ""
+    >("");
+
+  const [
+    categoryCustomLabel,
+    setCategoryCustomLabel,
+  ] = useState("");
+
   const [error, setError] =
     useState("");
 
@@ -140,6 +155,15 @@ export default function AddTransactionScreen() {
 
       setDescription(
         editingTransaction.description
+      );
+
+      setCategory(
+        editingTransaction.category
+      );
+
+      setCategoryCustomLabel(
+        editingTransaction.categoryCustomLabel ??
+          ""
       );
 
       if (
@@ -300,7 +324,8 @@ export default function AddTransactionScreen() {
     if (
       !event ||
       !session ||
-      !creditorId
+      !creditorId ||
+      !category
     ) {
       return;
     }
@@ -315,6 +340,18 @@ export default function AddTransactionScreen() {
       return;
     }
 
+    if (
+      category === "other" &&
+      !categoryCustomLabel.trim()
+    ) {
+      return;
+    }
+
+    const resolvedCustomLabel =
+      category === "other"
+        ? categoryCustomLabel.trim()
+        : null;
+
     setLoading(true);
     setError("");
 
@@ -326,14 +363,18 @@ export default function AddTransactionScreen() {
             creditorId,
             numericAmount,
             currency,
-            description.trim()
+            description.trim(),
+            category,
+            resolvedCustomLabel
           )
         : await createTransaction(
             event.id,
             creditorId,
             numericAmount,
             currency,
-            description.trim()
+            description.trim(),
+            category,
+            resolvedCustomLabel
           );
 
     setLoading(false);
@@ -376,6 +417,10 @@ export default function AddTransactionScreen() {
     creditorId !== "" &&
     Number(amount) > 0 &&
     description.trim() !== "" &&
+    category !== "" &&
+    (category !== "other" ||
+      categoryCustomLabel.trim() !==
+        "") &&
     !loading &&
     !previewLoading;
 
@@ -521,6 +566,55 @@ export default function AddTransactionScreen() {
           }
         )
       )}
+
+      <Text
+        style={[
+          styles.label,
+          {
+            color:
+              colors.textSecondary,
+          },
+        ]}
+      >
+        Category
+      </Text>
+
+      <View style={styles.chipRow}>
+        {TRANSACTION_CATEGORIES.map(
+          (item) => (
+            <Chip
+              key={item.value}
+              label={item.label}
+              selected={
+                category ===
+                item.value
+              }
+              onPress={() =>
+                setCategory(
+                  item.value
+                )
+              }
+            />
+          )
+        )}
+      </View>
+
+      {category === "other" ? (
+        <TextField
+          label="What's it for?"
+          placeholder="e.g. Museum tickets"
+          value={
+            categoryCustomLabel
+          }
+          onChangeText={
+            setCategoryCustomLabel
+          }
+          maxLength={40}
+          style={
+            styles.customLabelSpacing
+          }
+        />
+      ) : null}
 
       <Text
         style={[
@@ -740,6 +834,17 @@ const styles = StyleSheet.create({
 
   memberOptionText: {
     fontSize: FontSize.md,
+  },
+
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+
+  customLabelSpacing: {
+    marginTop: -Spacing.sm,
   },
 
   currencyPickerRow: {

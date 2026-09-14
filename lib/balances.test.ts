@@ -1,5 +1,6 @@
 import type { Transaction } from "../context/EventContext";
 import {
+  calculateCategoryTotals,
   calculatePairwiseBalances,
   calculatePersonalBalances,
   isOutstanding,
@@ -21,6 +22,8 @@ function makeTransaction(
     originalCurrency: null,
     originalAmountInPence: null,
     exchangeRate: null,
+    category: "other",
+    categoryCustomLabel: null,
     ...overrides,
   };
 }
@@ -315,5 +318,97 @@ describe("calculatePersonalBalances", () => {
       );
 
     expect(result).toEqual({});
+  });
+});
+
+describe("calculateCategoryTotals", () => {
+  it("returns an empty object for no transactions", () => {
+    expect(
+      calculateCategoryTotals([])
+    ).toEqual({});
+  });
+
+  it("sums amounts within the same category", () => {
+    const result =
+      calculateCategoryTotals([
+        makeTransaction({
+          category: "food",
+          amountInPence: 1000,
+        }),
+        makeTransaction({
+          category: "food",
+          amountInPence: 500,
+        }),
+      ]);
+
+    expect(result).toEqual({
+      food: 1500,
+    });
+  });
+
+  it("keeps different categories independent", () => {
+    const result =
+      calculateCategoryTotals([
+        makeTransaction({
+          category: "food",
+          amountInPence: 1000,
+        }),
+        makeTransaction({
+          category: "transport",
+          amountInPence: 300,
+        }),
+      ]);
+
+    expect(result).toEqual({
+      food: 1000,
+      transport: 300,
+    });
+  });
+
+  it("counts both outstanding and settled transactions as real spend", () => {
+    const result =
+      calculateCategoryTotals([
+        makeTransaction({
+          category: "bills",
+          status: "confirmed",
+          amountInPence: 400,
+        }),
+        makeTransaction({
+          category: "bills",
+          status: "settled",
+          amountInPence: 600,
+        }),
+      ]);
+
+    expect(result).toEqual({
+      bills: 1000,
+    });
+  });
+
+  it("excludes cancelled transactions", () => {
+    const result =
+      calculateCategoryTotals([
+        makeTransaction({
+          category: "entertainment",
+          status: "cancelled",
+          amountInPence: 900,
+        }),
+      ]);
+
+    expect(result).toEqual({});
+  });
+
+  it("doesn't include a category nobody has used", () => {
+    const result =
+      calculateCategoryTotals([
+        makeTransaction({
+          category: "food",
+          amountInPence: 500,
+        }),
+      ]);
+
+    expect(
+      "transport" in result
+    ).toBe(false);
   });
 });

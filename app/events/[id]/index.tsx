@@ -22,6 +22,7 @@ import {
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { Chip } from "../../../components/ui/Chip";
+import { PieChart } from "../../../components/ui/PieChart";
 import { ScreenContainer } from "../../../components/ui/ScreenContainer";
 import { StatusBadge } from "../../../components/ui/StatusBadge";
 import {
@@ -36,7 +37,15 @@ import {
 } from "../../../context/EventContext";
 import { useFriends } from "../../../context/FriendsContext";
 import { useTheme } from "../../../context/ThemeContext";
-import { calculatePairwiseBalances } from "../../../lib/balances";
+import {
+  calculateCategoryTotals,
+  calculatePairwiseBalances,
+} from "../../../lib/balances";
+import {
+  getCategoryDefinition,
+  getCategoryDisplayLabel,
+  TransactionCategory,
+} from "../../../lib/categories";
 import { formatCurrencyFromPence } from "../../../lib/currency";
 
 export default function EventDetailsScreen() {
@@ -665,6 +674,34 @@ export default function EventDetailsScreen() {
         balance !== 0
     );
 
+  const categoryTotals =
+    calculateCategoryTotals(
+      event.transactions
+    );
+
+  const categorySlices =
+    Object.entries(categoryTotals).map(
+      ([categoryValue, total]) => {
+        const definition =
+          getCategoryDefinition(
+            categoryValue as TransactionCategory
+          );
+
+        return {
+          label: definition.label,
+          color: definition.color,
+          value: total ?? 0,
+        };
+      }
+    );
+
+  const categorySpendTotal =
+    categorySlices.reduce(
+      (sum, slice) =>
+        sum + slice.value,
+      0
+    );
+
   function CollapsibleSectionHeader({
     title,
     count,
@@ -760,17 +797,52 @@ export default function EventDetailsScreen() {
           />
         </View>
 
-        <Text
-          style={[
-            styles.transactionDescription,
-            {
-              color:
-                colors.textSecondary,
-            },
-          ]}
+        <View
+          style={
+            styles.descriptionRow
+          }
         >
-          {transaction.description}
-        </Text>
+          <Text
+            style={[
+              styles.transactionDescription,
+              {
+                color:
+                  colors.textSecondary,
+              },
+            ]}
+          >
+            {transaction.description}
+          </Text>
+
+          <View
+            style={[
+              styles.categoryBadge,
+              {
+                backgroundColor:
+                  getCategoryDefinition(
+                    transaction.category
+                  ).color + "26",
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.categoryBadgeText,
+                {
+                  color:
+                    getCategoryDefinition(
+                      transaction.category
+                    ).color,
+                },
+              ]}
+            >
+              {getCategoryDisplayLabel(
+                transaction.category,
+                transaction.categoryCustomLabel
+              )}
+            </Text>
+          </View>
+        </View>
 
         <Text
           style={[
@@ -1776,6 +1848,95 @@ export default function EventDetailsScreen() {
         )
       )}
 
+      {categorySlices.length > 0 ? (
+        <>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color:
+                  colors.textPrimary,
+              },
+            ]}
+          >
+            Spending by Category
+          </Text>
+
+          <View
+            style={
+              styles.categorySummaryRow
+            }
+          >
+            <PieChart
+              slices={categorySlices}
+            />
+
+            <View
+              style={
+                styles.categoryLegend
+              }
+            >
+              {categorySlices.map(
+                (slice) => (
+                  <View
+                    key={slice.label}
+                    style={
+                      styles.categoryLegendRow
+                    }
+                  >
+                    <View
+                      style={[
+                        styles.categoryLegendSwatch,
+                        {
+                          backgroundColor:
+                            slice.color,
+                        },
+                      ]}
+                    />
+
+                    <Text
+                      style={[
+                        styles.categoryLegendLabel,
+                        {
+                          color:
+                            colors.textPrimary,
+                        },
+                      ]}
+                    >
+                      {slice.label}
+                    </Text>
+
+                    <Text
+                      style={[
+                        styles.categoryLegendAmount,
+                        {
+                          color:
+                            colors.textSecondary,
+                        },
+                      ]}
+                    >
+                      {formatCurrencyFromPence(
+                        slice.value,
+                        event.primaryCurrency
+                      )}
+                      {"  "}
+                      {categorySpendTotal >
+                      0
+                        ? `(${Math.round(
+                            (slice.value /
+                              categorySpendTotal) *
+                              100
+                          )}%)`
+                        : ""}
+                    </Text>
+                  </View>
+                )
+              )}
+            </View>
+          </View>
+        </>
+      ) : null}
+
       {isCreator &&
       !showDeleteConfirmation ? (
         <Pressable
@@ -2233,9 +2394,29 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
+  descriptionRow: {
+    flexDirection: "row",
+    justifyContent:
+      "space-between",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+
   transactionDescription: {
     fontSize: FontSize.sm,
-    marginTop: Spacing.sm,
+    flex: 1,
+  },
+
+  categoryBadge: {
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+  },
+
+  categoryBadgeText: {
+    fontSize: FontSize.xs,
+    fontWeight: "700",
   },
 
   transactionDate: {
@@ -2320,6 +2501,39 @@ const styles = StyleSheet.create({
   addTransactionSpacing: {
     marginTop: Spacing.xl,
     marginBottom: Spacing.xl,
+  },
+
+  categorySummaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.lg,
+  },
+
+  categoryLegend: {
+    flex: 1,
+    gap: Spacing.sm,
+  },
+
+  categoryLegendRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+
+  categoryLegendSwatch: {
+    width: 10,
+    height: 10,
+    borderRadius: Radius.pill,
+  },
+
+  categoryLegendLabel: {
+    fontSize: FontSize.sm,
+    fontWeight: "600",
+    flex: 1,
+  },
+
+  categoryLegendAmount: {
+    fontSize: FontSize.xs,
   },
 
   dangerButton: {

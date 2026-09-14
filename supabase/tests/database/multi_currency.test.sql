@@ -223,7 +223,7 @@ select throws_ok(
     $$
       select edit_transaction(
         %L::uuid, %L::uuid, %L::uuid, 5000, 'Edited badly',
-        'USD', null, null
+        'other', null, 'USD', null, null
       )
     $$,
     :'trip_event_id', :'own_transaction_id', :'bob_id'
@@ -237,7 +237,7 @@ select lives_ok(
     $$
       select edit_transaction(
         %L::uuid, %L::uuid, %L::uuid, 5000, 'Edited cleanly',
-        'USD', 4200, 1.19
+        'other', null, 'USD', 4200, 1.19
       )
     $$,
     :'trip_event_id', :'own_transaction_id', :'bob_id'
