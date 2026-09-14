@@ -1107,6 +1107,28 @@ export default function EventDetailsScreen() {
               })
             }
           />
+
+          <View
+            style={
+              styles.scanReceiptSpacing
+            }
+          >
+            <Button
+              label="Scan a Receipt"
+              icon="camera-outline"
+              variant="secondary"
+              onPress={() =>
+                router.push({
+                  pathname:
+                    "/events/[id]/scan-receipt",
+
+                  params: {
+                    id: event.id,
+                  },
+                })
+              }
+            />
+          </View>
         </View>
       ) : null}
 
@@ -1848,6 +1870,109 @@ export default function EventDetailsScreen() {
         )
       )}
 
+      {event.receipts.length > 0 ? (
+        <>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color:
+                  colors.textPrimary,
+              },
+            ]}
+          >
+            Receipts
+          </Text>
+
+          {event.receipts.map(
+            (receipt) => (
+              <Pressable
+                key={receipt.id}
+                onPress={() =>
+                  router.push({
+                    pathname:
+                      "/events/[id]/receipts/[receiptId]",
+
+                    params: {
+                      id: event.id,
+                      receiptId:
+                        receipt.id,
+                    },
+                  })
+                }
+              >
+                <Card
+                  style={
+                    styles.receiptCard
+                  }
+                >
+                  <View
+                    style={
+                      styles.receiptHeaderRow
+                    }
+                  >
+                    <Text
+                      style={[
+                        styles.receiptTitle,
+                        {
+                          color:
+                            colors.textPrimary,
+                        },
+                      ]}
+                    >
+                      {getCategoryDisplayLabel(
+                        receipt.category,
+                        receipt.categoryCustomLabel
+                      )}
+                    </Text>
+
+                    <Text
+                      style={[
+                        styles.receiptStatus,
+                        {
+                          color:
+                            receipt.status ===
+                            "claiming"
+                              ? colors.warningText
+                              : receipt.status ===
+                                  "finalized"
+                                ? colors.successText
+                                : colors.textTertiary,
+                        },
+                      ]}
+                    >
+                      {receipt.status ===
+                      "claiming"
+                        ? "Claiming"
+                        : receipt.status ===
+                            "finalized"
+                          ? "Finalized"
+                          : "Cancelled"}
+                    </Text>
+                  </View>
+
+                  <Text
+                    style={[
+                      styles.receiptSubtitle,
+                      {
+                        color:
+                          colors.textSecondary,
+                      },
+                    ]}
+                  >
+                    Scanned by{" "}
+                    {
+                      receipt.purchaserName
+                    }{" "}
+                    · {receipt.currency}
+                  </Text>
+                </Card>
+              </Pressable>
+            )
+          )}
+        </>
+      ) : null}
+
       {categorySlices.length > 0 ? (
         <>
           <Text
@@ -2501,6 +2626,39 @@ const styles = StyleSheet.create({
   addTransactionSpacing: {
     marginTop: Spacing.xl,
     marginBottom: Spacing.xl,
+  },
+
+  scanReceiptSpacing: {
+    marginTop: Spacing.sm,
+  },
+
+  receiptCard: {
+    marginBottom: Spacing.sm,
+  },
+
+  receiptHeaderRow: {
+    flexDirection: "row",
+    justifyContent:
+      "space-between",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+
+  receiptTitle: {
+    fontSize: FontSize.md,
+    fontWeight: "700",
+  },
+
+  receiptStatus: {
+    fontSize: FontSize.xs,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+
+  receiptSubtitle: {
+    fontSize: FontSize.sm,
+    marginTop: Spacing.xs,
   },
 
   categorySummaryRow: {

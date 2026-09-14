@@ -41,6 +41,22 @@ export type Transaction = {
   categoryCustomLabel: string | null;
 };
 
+export type ReceiptStatus =
+  | "claiming"
+  | "finalized"
+  | "cancelled";
+
+export type ReceiptSummary = {
+  id: string;
+  purchaserId: string;
+  purchaserName: string;
+  currency: string;
+  category: TransactionCategory;
+  categoryCustomLabel: string | null;
+  status: ReceiptStatus;
+  createdAt: string;
+};
+
 export type Event = {
   id: string;
   name: string;
@@ -50,6 +66,7 @@ export type Event = {
   additionalCurrencies: string[];
   members: Member[];
   transactions: Transaction[];
+  receipts: ReceiptSummary[];
 };
 
 type EventContextType = {
@@ -194,6 +211,7 @@ export function EventProvider({
             const [
               membershipResult,
               transactionResult,
+              receiptResult,
             ] = await Promise.all([
               supabase
                 .from("event_members")
@@ -219,6 +237,27 @@ export function EventProvider({
                   exchange_rate,
                   category,
                   category_custom_label
+                  `
+                )
+                .eq(
+                  "event_id",
+                  eventRow.id
+                )
+                .order("created_at", {
+                  ascending: false,
+                }),
+
+              supabase
+                .from("receipts")
+                .select(
+                  `
+                  id,
+                  purchaser_id,
+                  currency,
+                  category,
+                  category_custom_label,
+                  status,
+                  created_at
                   `
                 )
                 .eq(
@@ -357,6 +396,48 @@ export function EventProvider({
                   transaction.category_custom_label,
               }));
 
+            const {
+              data: receiptRows,
+              error: receiptError,
+            } = receiptResult;
+
+            if (receiptError) {
+              console.error(
+                "Failed to load receipts:",
+                receiptError.message
+              );
+            }
+
+            const receipts: ReceiptSummary[] =
+              (
+                receiptRows ?? []
+              ).map((receipt) => ({
+                id: receipt.id,
+
+                purchaserId:
+                  receipt.purchaser_id,
+
+                purchaserName:
+                  memberNameMap.get(
+                    receipt.purchaser_id
+                  ) ?? "Unknown",
+
+                currency:
+                  receipt.currency,
+
+                category:
+                  receipt.category as TransactionCategory,
+
+                categoryCustomLabel:
+                  receipt.category_custom_label,
+
+                status:
+                  receipt.status as ReceiptStatus,
+
+                createdAt:
+                  receipt.created_at,
+              }));
+
             const loadedEvent: Event = {
               id: eventRow.id,
               name: eventRow.name,
@@ -376,6 +457,7 @@ export function EventProvider({
 
               members,
               transactions,
+              receipts,
             };
 
             return loadedEvent;
@@ -530,6 +612,18 @@ export function EventProvider({
         }
       )
 
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "receipts",
+        },
+        () => {
+          scheduleRealtimeRefresh();
+        }
+      )
+
       .subscribe((_status, error) => {
         if (error) {
           console.error(
@@ -635,6 +729,7 @@ export function EventProvider({
 
       members: [],
       transactions: [],
+      receipts: [],
     };
   }
 

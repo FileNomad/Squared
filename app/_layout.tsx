@@ -17,6 +17,7 @@ import {
 } from "../context/AuthContext";
 import { EventProvider } from "../context/EventContext";
 import { FriendsProvider } from "../context/FriendsContext";
+import { ReceiptProvider } from "../context/ReceiptContext";
 import {
   ThemeProvider,
   useTheme,
@@ -191,6 +192,21 @@ function AppNavigator() {
                 "Add Transaction",
             }}
           />
+
+          <Stack.Screen
+            name="events/[id]/scan-receipt"
+            options={{
+              title:
+                "Scan a Receipt",
+            }}
+          />
+
+          <Stack.Screen
+            name="events/[id]/receipts/[receiptId]"
+            options={{
+              title: "Receipt",
+            }}
+          />
         </Stack.Protected>
 
         {/*
@@ -238,7 +254,9 @@ export default function RootLayout() {
       <AuthProvider>
         <EventProvider>
           <FriendsProvider>
-            <AppNavigator />
+            <ReceiptProvider>
+              <AppNavigator />
+            </ReceiptProvider>
           </FriendsProvider>
         </EventProvider>
       </AuthProvider>

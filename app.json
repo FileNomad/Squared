@@ -38,6 +38,13 @@
           "resizeMode": "contain",
           "backgroundColor": "#1F5C3E"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Squared. uses the camera to scan receipts for splitting bills.",
+          "photosPermission": "Squared. uses your photos to scan receipts for splitting bills."
+        }
       ]
     ],
     "experiments": {
