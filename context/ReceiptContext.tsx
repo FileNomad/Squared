@@ -83,7 +83,6 @@ type ScanReceiptParams = {
   categoryCustomLabel: string | null;
   attendeeIds: string[];
   imageBase64: string;
-  imageMediaType: string;
 };
 
 type ReceiptContextType = {
@@ -433,9 +432,6 @@ export function ReceiptProvider({
 
             image_base64:
               params.imageBase64,
-
-            image_media_type:
-              params.imageMediaType,
           },
         }
       );

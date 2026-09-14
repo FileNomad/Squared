@@ -17,6 +17,69 @@ const VALID_CATEGORIES = [
 
 const CLAUDE_MODEL = "claude-haiku-4-5-20251001";
 
+/**
+ * Sniffs the real image format from its magic bytes instead
+ * of trusting whatever media type the client claims. Both
+ * the web and native image pickers have turned out to be
+ * unreliable about reporting the format that actually
+ * matches their base64 output (web reports the source
+ * file's real type but native's "always JPEG" assumption
+ * doesn't hold in every case) - Claude's API rejects the
+ * request outright if the declared type doesn't match the
+ * bytes, so the server has to determine the truth itself
+ * rather than pass through a claim it can't verify.
+ */
+function detectImageMediaType(
+  base64: string
+): string | null {
+  let bytes: Uint8Array;
+
+  try {
+    const binary = atob(
+      base64.slice(0, 32)
+    );
+
+    bytes = Uint8Array.from(
+      binary,
+      (char) => char.charCodeAt(0)
+    );
+  } catch {
+    return null;
+  }
+
+  if (
+    bytes[0] === 0xff &&
+    bytes[1] === 0xd8 &&
+    bytes[2] === 0xff
+  ) {
+    return "image/jpeg";
+  }
+
+  if (
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47
+  ) {
+    return "image/png";
+  }
+
+  if (
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46 &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50
+  ) {
+    return "image/webp";
+  }
+
+  return null;
+}
+
 const EXTRACTION_PROMPT = `Read this receipt photo and extract the line items. Respond with ONLY valid JSON, no markdown code fences, no commentary before or after - just the JSON object, matching exactly this shape:
 
 {"items":[{"name":string,"price_in_pence":integer,"quantity":integer}],"tax_in_pence":integer|null,"tip_in_pence":integer|null}
@@ -212,8 +275,6 @@ Deno.serve(async (req) => {
         categoryCustomLabel,
       attendee_ids: attendeeIds,
       image_base64: imageBase64,
-      image_media_type:
-        imageMediaType,
     } = await req.json();
 
     if (
@@ -230,14 +291,7 @@ Deno.serve(async (req) => {
       ) ||
       typeof imageBase64 !==
         "string" ||
-      !imageBase64 ||
-      typeof imageMediaType !==
-        "string" ||
-      ![
-        "image/jpeg",
-        "image/png",
-        "image/webp",
-      ].includes(imageMediaType)
+      !imageBase64
     ) {
       return jsonResponse(
         {
@@ -258,6 +312,21 @@ Deno.serve(async (req) => {
         {
           error:
             "A label is required when the category is Other.",
+        },
+        400
+      );
+    }
+
+    const detectedMediaType =
+      detectImageMediaType(
+        imageBase64
+      );
+
+    if (!detectedMediaType) {
+      return jsonResponse(
+        {
+          error:
+            "That doesn't look like a supported image. Try a JPEG, PNG, or WebP photo.",
         },
         400
       );
@@ -432,7 +501,7 @@ Deno.serve(async (req) => {
                       source: {
                         type: "base64",
                         media_type:
-                          imageMediaType,
+                          detectedMediaType,
                         data: imageBase64,
                       },
                     },

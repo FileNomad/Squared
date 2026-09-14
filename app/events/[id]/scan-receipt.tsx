@@ -32,12 +32,6 @@ import {
   TransactionCategory,
 } from "../../../lib/categories";
 
-const ALLOWED_IMAGE_MEDIA_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-];
-
 export default function ScanReceiptScreen() {
   const { colors } = useTheme();
 
@@ -88,7 +82,6 @@ export default function ScanReceiptScreen() {
     useState<{
       uri: string;
       base64: string;
-      mediaType: string;
     } | null>(null);
 
   const [error, setError] =
@@ -188,21 +181,10 @@ export default function ScanReceiptScreen() {
       return;
     }
 
-    const pickedMediaType =
-      result.assets[0].mimeType;
-
     setPhoto({
       uri: result.assets[0].uri,
       base64:
         result.assets[0].base64,
-
-      mediaType:
-        pickedMediaType &&
-        ALLOWED_IMAGE_MEDIA_TYPES.includes(
-          pickedMediaType
-        )
-          ? pickedMediaType
-          : "image/jpeg",
     });
   }
 
@@ -242,8 +224,6 @@ export default function ScanReceiptScreen() {
       ),
 
       imageBase64: photo.base64,
-      imageMediaType:
-        photo.mediaType,
     });
 
     if (scanError || !receiptId) {
