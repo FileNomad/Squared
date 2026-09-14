@@ -11,6 +11,49 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthContext";
 import type { ReceiptStatus } from "./EventContext";
 
+/**
+ * supabase-js's FunctionsHttpError carries the actual
+ * response body on `context`, which is a Response object
+ * that still needs to be read - error.message is just the
+ * generic "Edge Function returned a non-2xx status code",
+ * not the scan-receipt function's own { error: "..." } body.
+ * Falls back to that generic message if context isn't a
+ * readable Response (a network-level FunctionsFetchError,
+ * or a body that isn't JSON).
+ */
+async function extractFunctionErrorMessage(
+  error: {
+    message: string;
+    context?: unknown;
+  }
+): Promise<string> {
+  const context = error.context as
+    | {
+        json?: () => Promise<unknown>;
+      }
+    | undefined;
+
+  if (typeof context?.json !== "function") {
+    return error.message;
+  }
+
+  try {
+    const body = await context.json();
+
+    const bodyError = (
+      body as {
+        error?: unknown;
+      }
+    )?.error;
+
+    return typeof bodyError === "string"
+      ? bodyError
+      : error.message;
+  } catch {
+    return error.message;
+  }
+}
+
 export type ReceiptItem = {
   id: string;
   name: string;
@@ -400,19 +443,11 @@ export function ReceiptProvider({
     setScanning(false);
 
     if (error) {
-      const message =
-        (
-          error as {
-            context?: {
-              error?: string;
-            };
-          }
-        )?.context?.error ??
-        error.message;
-
       return {
         receiptId: null,
-        error: message,
+        error: await extractFunctionErrorMessage(
+          error
+        ),
       };
     }
 
